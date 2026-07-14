@@ -1,59 +1,105 @@
 # ⚡ MerdSuite ERP
 
-A modern Electrical Contractor ERP built for **IbraMerd Electricals**.
+A modern Electrical Project Management ERP built with React and Vite.
+
+Designed for electricians, electrical contractors and small engineering companies to manage projects, quotations, invoices, inventory and expenses from one dashboard.
 
 ---
 
-## 📌 Current Version
+# Features
 
-**v0.3**
+## Dashboard
+- Business overview
+- Revenue summary
+- Active projects
+- Outstanding invoices
+
+## Clients
+- Add clients
+- Edit clients
+- Delete clients
+- Client history
+
+## Projects
+- Project management
+- Status tracking
+- Budget tracking
+- Project locations
+
+## Quotations
+- Material calculator
+- Labour costs
+- Transport costs
+- Discounts
+- Automatic totals
+- Save quotations
+
+## Invoices
+- Create invoices
+- Convert quotation to invoice
+- Payment tracking
+- Balance calculation
+
+## Inventory
+- Material stock
+- Cable management
+- Purchase records
+
+## Expenses
+- Record expenses
+- Categorize expenses
+- Monthly summaries
+
+## Reports
+- Revenue reports
+- Expense reports
+- Profit reports
 
 ---
 
-## ✅ Completed Modules
-
-- Dashboard
-- Clients
-- Projects
-- Quotations
-- Invoices
-
----
-
-## 🚧 Currently Working On
-
-- Save Quotations
-- Invoice Integration
-- Automatic Quotation Numbers
-
----
-
-## 📅 Upcoming Features
-
-- Inventory Management
-- Expenses
-- Reports
-- PDF Quotations
-- PDF Invoices
-- Dashboard Analytics
-- User Login
-- Cloud Database (Supabase)
-
----
-
-## 🛠️ Technology
+# Technology
 
 - React
 - Vite
+- JavaScript
 - Tailwind CSS
-- React Router
 - Local Storage
-- Git & GitHub
 
 ---
 
-## 👨‍💻 Developer
+# Screenshots
 
-**Mohammed Ibrahim**
+Coming soon.
 
-**IbraMerd Electricals**
+---
+
+# Installation
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+# Future Features
+
+- User accounts
+- Cloud synchronization
+- PDF quotations
+- PDF invoices
+- WhatsApp sharing
+- Email quotations
+- Inventory alerts
+- Mobile App
+- Multi-user support
+
+---
+
+# Developer
+
+Mohammed Ibrahim
+
+Founder — IbraMerd Electricals
+
+Ghana 🇬🇭
