@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
 import Quotations from "./pages/Quotations";
+import Invoices from "./pages/Invoices";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Route path="/clients" element={<Clients />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/quotations" element={<Quotations />} />
+      <Route path="/invoices" element={<Invoices />} />
     </Routes>
   );
 }

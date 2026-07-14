@@ -2,6 +2,11 @@ import { useState } from "react";
 import MainLayout from "../layouts/MainLayout";
 
 function Quotations() {
+  const [projects] = useState(() => {
+    const savedProjects = localStorage.getItem("projects");
+    return savedProjects ? JSON.parse(savedProjects) : [];
+  });
+
   const [quotation, setQuotation] = useState({
     client: "",
     project: "",
@@ -81,17 +86,29 @@ function Quotations() {
             className="border rounded-lg p-2"
           />
 
-          <input
-            placeholder="Project Name"
+          <select
             value={quotation.project}
-            onChange={(e) =>
+            onChange={(e) => {
+              const selected = projects.find(
+                (p) => p.name === e.target.value
+              );
+
               setQuotation({
                 ...quotation,
-                project: e.target.value,
-              })
-            }
+                project: selected?.name || "",
+                client: selected?.client || "",
+              });
+            }}
             className="border rounded-lg p-2"
-          />
+          >
+            <option value="">Select Project</option>
+
+            {projects.map((project) => (
+              <option key={project.id} value={project.name}>
+                {project.name}
+              </option>
+            ))}
+          </select>
 
           <input
             type="date"
@@ -125,7 +142,7 @@ function Quotations() {
         </div>
 
         {materials.length === 0 && (
-          <p className="text-gray-500 mb-6">
+          <p className="text-gray-500 mb-4">
             No materials added yet.
           </p>
         )}
