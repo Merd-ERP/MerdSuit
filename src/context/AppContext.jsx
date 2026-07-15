@@ -1,23 +1,23 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  const [clients, setClients] = useState(() => {
-    return JSON.parse(localStorage.getItem("clients")) || [];
-  });
+  const [clients, setClients] = useState(() =>
+    JSON.parse(localStorage.getItem("clients")) || []
+  );
 
-  const [projects, setProjects] = useState(() => {
-    return JSON.parse(localStorage.getItem("projects")) || [];
-  });
+  const [projects, setProjects] = useState(() =>
+    JSON.parse(localStorage.getItem("projects")) || []
+  );
 
-  const [quotations, setQuotations] = useState(() => {
-    return JSON.parse(localStorage.getItem("quotations")) || [];
-  });
+  const [quotations, setQuotations] = useState(() =>
+    JSON.parse(localStorage.getItem("quotations")) || []
+  );
 
-  const [invoices, setInvoices] = useState(() => {
-    return JSON.parse(localStorage.getItem("invoices")) || [];
-  });
+  const [invoices, setInvoices] = useState(() =>
+    JSON.parse(localStorage.getItem("invoices")) || []
+  );
 
   useEffect(() => {
     localStorage.setItem("clients", JSON.stringify(clients));

@@ -1,12 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MainLayout from "../layouts/MainLayout";
+import { useApp } from "../context/AppContext";
 
 function Clients() {
-  const [clients, setClients] = useState(() => {
-  const savedClients = localStorage.getItem("clients");
-
-  return savedClients ? JSON.parse(savedClients) : [];
-});
+  const { clients, setClients } = useApp();
 
   const [client, setClient] = useState({
     name: "",
@@ -16,39 +13,40 @@ function Clients() {
   });
 
   function addClient() {
-  if (client.name.trim() === "") return;
+    if (client.name.trim() === "") return;
 
-  setClients([
-    ...clients,
-    {
-      id: Date.now(),
-      ...client,
-      status: "Active",
-    },
-  ]);
+    const updatedClients = [
+      ...clients,
+      {
+        id: Date.now(),
+        ...client,
+        status: "Active",
+      },
+    ];
 
-  setClient({
-    name: "",
-    phone: "",
-    location: "",
-    email: "",
-  });
-}
+    setClients(updatedClients);
 
-function deleteClient(id) {
-  const updatedClients = clients.filter(
-    (client) => client.id !== id
-  );
+    setClient({
+      name: "",
+      phone: "",
+      location: "",
+      email: "",
+    });
+  }
 
-  setClients(updatedClients);
-}
+  function deleteClient(id) {
+    const updatedClients = clients.filter(
+      (client) => client.id !== id
+    );
 
-useEffect(() => {
-  localStorage.setItem("clients", JSON.stringify(clients));
-}, [clients]);
+    setClients(updatedClients);
+  }
+
   return (
     <MainLayout>
-      <h1 className="text-4xl font-bold mb-6">Clients</h1>
+      <h1 className="text-4xl font-bold mb-6">
+        Clients
+      </h1>
 
       <div className="bg-white rounded-xl shadow p-6">
 
@@ -59,7 +57,10 @@ useEffect(() => {
             placeholder="Client Name"
             value={client.name}
             onChange={(e) =>
-              setClient({ ...client, name: e.target.value })
+              setClient({
+                ...client,
+                name: e.target.value,
+              })
             }
             className="border rounded-lg px-4 py-2"
           />
@@ -69,7 +70,10 @@ useEffect(() => {
             placeholder="Phone Number"
             value={client.phone}
             onChange={(e) =>
-              setClient({ ...client, phone: e.target.value })
+              setClient({
+                ...client,
+                phone: e.target.value,
+              })
             }
             className="border rounded-lg px-4 py-2"
           />
@@ -79,7 +83,10 @@ useEffect(() => {
             placeholder="Location"
             value={client.location}
             onChange={(e) =>
-              setClient({ ...client, location: e.target.value })
+              setClient({
+                ...client,
+                location: e.target.value,
+              })
             }
             className="border rounded-lg px-4 py-2"
           />
@@ -89,7 +96,10 @@ useEffect(() => {
             placeholder="Email"
             value={client.email}
             onChange={(e) =>
-              setClient({ ...client, email: e.target.value })
+              setClient({
+                ...client,
+                email: e.target.value,
+              })
             }
             className="border rounded-lg px-4 py-2"
           />
@@ -142,24 +152,19 @@ useEffect(() => {
                     <td>{client.email}</td>
 
                     <td>
-
                       <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full">
-
                         {client.status}
-
                       </span>
-
                     </td>
+
                     <td>
-  <td>
-  <button
-  onClick={() => deleteClient(client.id)}
-    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-  >
-    Delete
-  </button>
-</td>
-</td>
+                      <button
+                        onClick={() => deleteClient(client.id)}
+                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </td>
 
                   </tr>
 

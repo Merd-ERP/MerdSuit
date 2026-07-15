@@ -1,7 +1,5 @@
-import {
-  saveQuotation,
-  generateQuotationNumber,
-} from "../../services/quotationService";
+import { useApp } from "../../context/AppContext";
+import { generateQuotationNumber } from "../../services/quotationService";
 
 function SaveQuotationButton({
   quotation,
@@ -12,6 +10,8 @@ function SaveQuotationButton({
   finalTotal,
   resetForm,
 }) {
+    const { quotations, setQuotations } = useApp();
+
   function handleSave() {
     if (!quotation.client || !quotation.project) {
       alert("Please select a client and project.");
@@ -36,7 +36,10 @@ function SaveQuotationButton({
       createdAt: new Date().toISOString(),
     };
 
-    saveQuotation(newQuotation);
+    setQuotations([
+  ...quotations,
+  newQuotation,
+]);
 
     alert("Quotation saved successfully!");
 
