@@ -1,0 +1,47 @@
+const STORAGE_KEY = "quotations";
+
+export function getQuotations() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+}
+
+export function saveQuotation(quotation) {
+  const quotations = getQuotations();
+  quotations.push(quotation);
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(quotations)
+  );
+}
+
+export function updateQuotation(updatedQuotation) {
+  const quotations = getQuotations().map((quotation) =>
+    quotation.id === updatedQuotation.id
+      ? updatedQuotation
+      : quotation
+  );
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(quotations)
+  );
+}
+
+export function deleteQuotation(id) {
+  const quotations = getQuotations().filter(
+    (quotation) => quotation.id !== id
+  );
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(quotations)
+  );
+}
+
+export function generateQuotationNumber() {
+  const quotations = getQuotations();
+
+  const nextNumber = quotations.length + 1;
+
+  return `QTN-${String(nextNumber).padStart(5, "0")}`;
+}
