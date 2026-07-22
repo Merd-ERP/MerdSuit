@@ -1,32 +1,45 @@
+import { Link, useLocation } from "react-router-dom";
 
-import { Link } from "react-router-dom";
 const menuItems = [
-  "Dashboard",
-  "Clients",
-  "Projects",
-  "Quotations",
-  "Invoices",
-  "Inventory",
-  "Expenses",
-  "Reports",
-  "Settings",
+  { name: "Dashboard", path: "/" },
+  { name: "Clients", path: "/clients" },
+  { name: "Projects", path: "/projects" },
+  { name: "Quotations", path: "/quotations" },
+  { name: "Invoices", path: "/invoices" },
+  { name: "Inventory", path: "/inventory" },
+
+  // NEW
+  { name: "Suppliers", path: "/suppliers" },
+  { name: "Purchase Orders", path: "/purchase-orders" },
+
+  { name: "Expenses", path: "/expenses" },
+  { name: "Reports", path: "/reports" },
+  { name: "Settings", path: "/settings" },
 ];
 
 function Sidebar() {
+  const location = useLocation();
+
   return (
-    <aside className="w-64 bg-slate-900 text-white min-h-screen p-6">
-      <h1 className="text-3xl font-bold mb-10">MerdSuite</h1>
+    <aside className="w-64 bg-slate-900 text-white min-h-screen p-6 shadow-xl">
+      <h1 className="text-3xl font-bold mb-10">
+        MerdSuite
+      </h1>
 
       <nav className="space-y-2">
         {menuItems.map((item) => (
-  <Link
-    key={item}
-    to={item === "Dashboard" ? "/" : `/${item.toLowerCase()}`}
-    className="block w-full px-4 py-3 rounded-lg hover:bg-slate-700 transition"
-  >
-    {item}
-  </Link>
-))}
+          <Link
+            key={item.name}
+            to={item.path}
+            className={`block w-full px-4 py-3 rounded-lg transition ${
+              location.pathname === item.path
+                ? "bg-blue-600 text-white"
+                : "hover:bg-slate-700"
+            }`}
+          >
+            {item.name}
+          </Link>
+        ))}
       </nav>
     </aside>
   );

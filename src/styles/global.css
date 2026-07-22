@@ -9,3 +9,50 @@ body,
   font-family: Arial, Helvetica, sans-serif;
   background: #f4f6f9;
 }
+@media print {
+
+  /* Hide the sidebar */
+  aside {
+    display: none !important;
+  }
+
+  /* Hide buttons */
+  button {
+    display: none !important;
+  }
+
+  /* Hide navigation if present */
+  nav {
+    display: none !important;
+  }
+
+  /* Remove page background */
+  body {
+    background: white !important;
+  }
+
+  /* Only show the invoice */
+  #invoice-print {
+    width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hide everything except the invoice */
+  body * {
+    visibility: hidden;
+  }
+
+  #invoice-print,
+  #invoice-print * {
+    visibility: visible;
+  }
+
+  #invoice-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+}
