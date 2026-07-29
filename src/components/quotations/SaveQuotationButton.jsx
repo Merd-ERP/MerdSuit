@@ -10,7 +10,7 @@ function SaveQuotationButton({
   finalTotal,
   resetForm,
 }) {
-    const { quotations, setQuotations } = useApp();
+  const { quotations, setQuotations } = useApp();
 
   function handleSave() {
     if (!quotation.client || !quotation.project) {
@@ -28,20 +28,17 @@ function SaveQuotationButton({
       quotationNumber: generateQuotationNumber(),
       ...quotation,
       materials,
-      labour: Number(labour),
-      transport: Number(transport),
-      discount: Number(discount),
+      labour: Number(labour || 0),
+      transport: Number(transport || 0),
+      discount: Number(discount || 0),
       total: finalTotal,
       status: "Pending",
       createdAt: new Date().toISOString(),
     };
 
-    setQuotations([
-  ...quotations,
-  newQuotation,
-]);
+    setQuotations([...quotations, newQuotation]);
 
-    alert("Quotation saved successfully!");
+    alert("✅ Quotation saved successfully!");
 
     resetForm();
   }
@@ -49,9 +46,9 @@ function SaveQuotationButton({
   return (
     <button
       onClick={handleSave}
-      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold"
+      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
     >
-      Save Quotation
+      💾 Save Quotation
     </button>
   );
 }

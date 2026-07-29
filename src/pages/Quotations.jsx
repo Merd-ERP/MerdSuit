@@ -6,6 +6,7 @@ import MaterialsTable from "../components/quotations/MaterialsTable";
 import SummaryCard from "../components/quotations/SummaryCard";
 import SaveQuotationButton from "../components/quotations/SaveQuotationButton";
 import QuotationHistory from "../components/quotations/QuotationHistory";
+import { generateQuotationPDF } from "../services/pdf/quotationPdf";
 
 function Quotations() {
   const [projects] = useState(() => {
@@ -21,9 +22,9 @@ function Quotations() {
 
   const [materials, setMaterials] = useState([]);
 
-  const [labour, setLabour] = useState(0);
-  const [transport, setTransport] = useState(0);
-  const [discount, setDiscount] = useState(0);
+  const [labour, setLabour] = useState("");
+  const [transport, setTransport] = useState("");
+  const [discount, setDiscount] = useState("");
 
   function addMaterial() {
     setMaterials([
@@ -67,9 +68,9 @@ function Quotations() {
 
   const finalTotal =
     materialTotal +
-    Number(labour) +
-    Number(transport) -
-    Number(discount);
+    Number(labour || 0) +
+    Number(transport || 0) -
+    Number(discount || 0);
 
   function resetForm() {
     setQuotation({
@@ -79,9 +80,9 @@ function Quotations() {
     });
 
     setMaterials([]);
-    setLabour(0);
-    setTransport(0);
-    setDiscount(0);
+    setLabour("");
+    setTransport("");
+    setDiscount("");
   }
 
   return (
@@ -109,46 +110,63 @@ function Quotations() {
 
           <input
             type="number"
-            placeholder="Labour Cost"
+            placeholder="Labour Cost (GH₵)"
             value={labour}
-            onChange={(e) => setLabour(Number(e.target.value))}
-            className="border rounded-lg p-2"
+            onChange={(e) => setLabour(e.target.value)}
+            className="border rounded-lg p-3"
           />
 
           <input
             type="number"
-            placeholder="Transport Cost"
+            placeholder="Transport Cost (GH₵)"
             value={transport}
-            onChange={(e) => setTransport(Number(e.target.value))}
-            className="border rounded-lg p-2"
+            onChange={(e) => setTransport(e.target.value)}
+            className="border rounded-lg p-3"
           />
 
           <input
             type="number"
-            placeholder="Discount"
+            placeholder="Discount (GH₵)"
             value={discount}
-            onChange={(e) => setDiscount(Number(e.target.value))}
-            className="border rounded-lg p-2"
+            onChange={(e) => setDiscount(e.target.value)}
+            className="border rounded-lg p-3"
           />
 
         </div>
 
         <SummaryCard
           materialTotal={materialTotal}
-          labour={labour}
-          transport={transport}
-          discount={discount}
+          labour={Number(labour || 0)}
+          transport={Number(transport || 0)}
+          discount={Number(discount || 0)}
           finalTotal={finalTotal}
         />
 
-        <div className="mt-8 flex justify-end">
+        <div className="mt-10 flex justify-end gap-4 border-t pt-6">
+
+          <button
+  onClick={() =>
+    generateQuotationPDF({
+      ...quotation,
+      materials,
+      labour: Number(labour || 0),
+      transport: Number(transport || 0),
+      discount: Number(discount || 0),
+      total: finalTotal,
+      currency: "GH₵",
+    })
+  }
+  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
+>
+  📄 Generate PDF
+</button>
 
           <SaveQuotationButton
             quotation={quotation}
             materials={materials}
-            labour={labour}
-            transport={transport}
-            discount={discount}
+            labour={Number(labour || 0)}
+            transport={Number(transport || 0)}
+            discount={Number(discount || 0)}
             finalTotal={finalTotal}
             resetForm={resetForm}
           />

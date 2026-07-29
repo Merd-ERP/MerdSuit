@@ -8,8 +8,11 @@ import Invoices from "./pages/Invoices";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import Inventory from "./pages/Inventory";
 import Suppliers from "./pages/Suppliers";
-import Settings from "./pages/Settings";
 import PurchaseOrders from "./pages/PurchaseOrders";
+import Expenses from "./pages/Expenses";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import CompanyProfile from "./pages/CompanyProfile";
 
 function App() {
   return (
@@ -44,19 +47,36 @@ function App() {
         path="/suppliers"
         element={<Suppliers />}
       />
+
       {/* Purchase Orders */}
-<Route
-  path="/purchase-orders"
-  element={<PurchaseOrders />}
+      <Route
+        path="/purchase-orders"
+        element={<PurchaseOrders />}
+      />
+
+      {/* Expenses */}
+      <Route
+        path="/expenses"
+        element={<Expenses />}
+      />
+
+      {/* Reports */}
+      <Route
+        path="/reports"
+        element={<Reports />}
+      />
+      <Route
+  path="/company-profile"
+  element={<CompanyProfile />}
 />
 
-      {/* Settings */}
+     {/* Settings */}
       <Route
         path="/settings"
         element={<Settings />}
       />
 
-      {/* Fallback */}
+      {/* Fallback - Always LAST */}
       <Route
         path="*"
         element={<Navigate to="/" replace />}

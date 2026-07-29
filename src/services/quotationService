@@ -41,7 +41,17 @@ export function deleteQuotation(id) {
 export function generateQuotationNumber() {
   const quotations = getQuotations();
 
-  const nextNumber = quotations.length + 1;
+  const year = new Date().getFullYear();
 
-  return `QTN-${String(nextNumber).padStart(5, "0")}`;
+  if (quotations.length === 0) {
+    return `QTN-${year}-00001`;
+  }
+
+  const lastQuotation = quotations[quotations.length - 1];
+
+  const lastPart = lastQuotation.quotationNumber.split("-").pop();
+
+  const nextNumber = Number(lastPart) + 1;
+
+  return `QTN-${year}-${String(nextNumber).padStart(5, "0")}`;
 }

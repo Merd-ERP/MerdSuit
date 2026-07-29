@@ -36,6 +36,11 @@ export function AppProvider({ children }) {
     () =>
       JSON.parse(localStorage.getItem("purchaseOrders")) || []
   );
+  // Expenses
+const [expenses, setExpenses] = useState(
+  () =>
+    JSON.parse(localStorage.getItem("expenses")) || []
+);
 
   // ===========================
   // Local Storage
@@ -71,6 +76,12 @@ export function AppProvider({ children }) {
       JSON.stringify(purchaseOrders)
     );
   }, [purchaseOrders]);
+  useEffect(() => {
+  localStorage.setItem(
+    "expenses",
+    JSON.stringify(expenses)
+  );
+}, [expenses]);
 
   // ===========================
   // Inventory
@@ -213,6 +224,29 @@ export function AppProvider({ children }) {
     )
   );
 }
+// ===========================
+// Expenses
+// ===========================
+
+function addExpense(expense) {
+  setExpenses((prev) => [...prev, expense]);
+}
+
+function updateExpense(updatedExpense) {
+  setExpenses((prev) =>
+    prev.map((expense) =>
+      expense.id === updatedExpense.id
+        ? updatedExpense
+        : expense
+    )
+  );
+}
+
+function deleteExpense(id) {
+  setExpenses((prev) =>
+    prev.filter((expense) => expense.id !== id)
+  );
+}
   return (
     <AppContext.Provider
       value={{
@@ -255,6 +289,13 @@ export function AppProvider({ children }) {
         updatePurchaseOrder,
         deletePurchaseOrder,
         receivePurchaseOrder,
+
+        // Expenses
+        expenses,
+        setExpenses,
+        addExpense,
+        updateExpense,
+        deleteExpense,
       }}
     >
       {children}
