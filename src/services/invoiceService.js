@@ -42,7 +42,17 @@ export function deleteInvoice(id) {
 export function generateInvoiceNumber() {
   const invoices = getInvoices();
 
-  const nextNumber = invoices.length + 1;
+  const year = new Date().getFullYear();
 
-  return `INV-${String(nextNumber).padStart(5, "0")}`;
+  if (invoices.length === 0) {
+    return `INV-${year}-00001`;
+  }
+
+  const lastInvoice = invoices[invoices.length - 1];
+
+  const lastPart = lastInvoice.invoiceNumber.split("-").pop();
+
+  const nextNumber = Number(lastPart) + 1;
+
+  return `INV-${year}-${String(nextNumber).padStart(5, "0")}`;
 }

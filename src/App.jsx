@@ -6,6 +6,7 @@ import Projects from "./pages/Projects";
 import Quotations from "./pages/Quotations";
 import Invoices from "./pages/Invoices";
 import InvoiceDetails from "./pages/InvoiceDetails";
+import QuotationDetails from "./pages/QuotationDetails";
 import Inventory from "./pages/Inventory";
 import Suppliers from "./pages/Suppliers";
 import PurchaseOrders from "./pages/PurchaseOrders";
@@ -35,6 +36,10 @@ function App() {
         path="/invoice/:id"
         element={<InvoiceDetails />}
       />
+      <Route
+  path="/quotation/:id"
+  element={<QuotationDetails />}
+/>
 
       {/* Inventory */}
       <Route

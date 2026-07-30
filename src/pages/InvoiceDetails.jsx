@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { getInvoices } from "../services/invoiceService";
 
+
 function InvoiceDetails() {
   const { id } = useParams();
 
