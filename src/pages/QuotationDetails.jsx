@@ -228,26 +228,25 @@ console.log("Quotations:", quotations);
         </table>
         <div className="mt-10 flex justify-end">
 
-  <div className="w-96 bg-slate-50 rounded-xl p-6 shadow">
-
+  <div className="w-96 bg-white rounded-xl border shadow-lg p-6">
     <div className="flex justify-between py-2">
       <span>Labour</span>
       <span>
-        GH₵ {Number(quotation.labour || 0).toLocaleString()}
+        {quotation.currency || "GH₵"} {Number(quotation.labour || 0).toLocaleString()}
       </span>
     </div>
 
     <div className="flex justify-between py-2">
       <span>Transport</span>
       <span>
-        GH₵ {Number(quotation.transport || 0).toLocaleString()}
+        {quotation.currency || "GH₵"} {Number(quotation.transport || 0).toLocaleString()}
       </span>
     </div>
 
     <div className="flex justify-between py-2">
       <span>Discount</span>
       <span className="text-red-600">
-        -GH₵ {Number(quotation.discount || 0).toLocaleString()}
+        -{quotation.currency || "GH₵"} {Number(quotation.discount || 0).toLocaleString()}
       </span>
     </div>
 
@@ -256,7 +255,7 @@ console.log("Quotations:", quotations);
     <div className="flex justify-between text-3xl font-bold text-green-700">
       <span>Grand Total</span>
       <span>
-        GH₵ {Number(quotation.total || 0).toLocaleString()}
+        {quotation.currency || "GH₵"} {Number(quotation.total || 0).toLocaleString()}
       </span>
     </div>
 
@@ -289,7 +288,7 @@ console.log("Quotations:", quotations);
 
 </div>
 
-</div>    {/* End of quotation-print */}
+</div>  
 
 </MainLayout>
   );
