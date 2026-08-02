@@ -16,11 +16,15 @@ export function convertQuotationToInvoice(quotation) {
     labour: quotation.labour,
     transport: quotation.transport,
     discount: quotation.discount,
-
     total: quotation.total,
 
+    // Payment Information
+    payments: [],
+    amountPaid: 0,
+    balance: quotation.total,
     status: "Unpaid",
 
+    // Reference
     quotationNumber: quotation.quotationNumber,
   };
 
