@@ -16,10 +16,10 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
     category: "Cable",
     supplier: "",
     unit: "pcs",
-    quantity: 0,
-    minimumStock: 0,
-    costPrice: 0,
-    sellingPrice: 0,
+    quantity: "",
+    minimumStock: "",
+    costPrice: "",
+    sellingPrice: "",
   });
 
   useEffect(() => {
@@ -50,10 +50,10 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
       category: "Cable",
       supplier: "",
       unit: "pcs",
-      quantity: 0,
-      minimumStock: 0,
-      costPrice: 0,
-      sellingPrice: 0,
+      quantity: "",
+      minimumStock: "",
+      costPrice: "",
+      sellingPrice: "",
     });
 
     setEditingId(null);
@@ -107,12 +107,16 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
         <input
           className="border rounded-lg p-2"
           placeholder="Item Name"
           value={item.name}
           onChange={(e) =>
-            setItem({ ...item, name: e.target.value })
+            setItem({
+              ...item,
+              name: e.target.value,
+            })
           }
         />
 
@@ -120,7 +124,10 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
           className="border rounded-lg p-2"
           value={item.category}
           onChange={(e) =>
-            setItem({ ...item, category: e.target.value })
+            setItem({
+              ...item,
+              category: e.target.value,
+            })
           }
         >
           <option>Cable</option>
@@ -139,7 +146,10 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
           placeholder="Supplier"
           value={item.supplier}
           onChange={(e) =>
-            setItem({ ...item, supplier: e.target.value })
+            setItem({
+              ...item,
+              supplier: e.target.value,
+            })
           }
         />
 
@@ -148,7 +158,10 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
           placeholder="Unit"
           value={item.unit}
           onChange={(e) =>
-            setItem({ ...item, unit: e.target.value })
+            setItem({
+              ...item,
+              unit: e.target.value,
+            })
           }
         />
 
@@ -160,7 +173,7 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
           onChange={(e) =>
             setItem({
               ...item,
-              quantity: Number(e.target.value),
+              quantity: e.target.value,
             })
           }
         />
@@ -173,7 +186,7 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
           onChange={(e) =>
             setItem({
               ...item,
-              minimumStock: Number(e.target.value),
+              minimumStock: e.target.value,
             })
           }
         />
@@ -186,7 +199,7 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
           onChange={(e) =>
             setItem({
               ...item,
-              costPrice: Number(e.target.value),
+              costPrice: e.target.value,
             })
           }
         />
@@ -199,10 +212,11 @@ function InventoryForm({ itemToEdit, setItemToEdit }) {
           onChange={(e) =>
             setItem({
               ...item,
-              sellingPrice: Number(e.target.value),
+              sellingPrice: e.target.value,
             })
           }
         />
+
       </div>
 
       <Button

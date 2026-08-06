@@ -1,31 +1,32 @@
 import MainLayout from "../layouts/MainLayout";
+import PageHeader from "../components/common/PageHeader";
+import DashboardHeader from "../components/dashboard/DashboardHeader";
+import DashboardStats from "../components/dashboard/DashboardStats";
+import QuickActions from "../components/dashboard/QuickActions";
+import RecentActivity from "../components/dashboard/RecentActivity";
+import AlertsPanel from "../components/dashboard/AlertsPanel";
+import RevenueChart from "../components/dashboard/RevenueChart";
+import HelpTip from "../components/dashboard/HelpTip";
 
 function Dashboard() {
   return (
     <MainLayout>
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <PageHeader
+        title="Dashboard"
+        subtitle="Welcome back. Here's an overview of your business."
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-gray-500">Clients</h2>
-          <p className="text-3xl font-bold">0</p>
-        </div>
+      <DashboardHeader />
+      <DashboardStats />
+      <QuickActions />
 
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-gray-500">Projects</h2>
-          <p className="text-3xl font-bold">0</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-gray-500">Revenue</h2>
-          <p className="text-3xl font-bold">GH₵ 0.00</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-gray-500">Pending Quotes</h2>
-          <p className="text-3xl font-bold">0</p>
-        </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <RecentActivity />
+        <AlertsPanel />
       </div>
+
+      <RevenueChart />
+      <HelpTip />
     </MainLayout>
   );
 }

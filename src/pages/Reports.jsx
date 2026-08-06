@@ -1,45 +1,42 @@
+import { useState } from "react";
 import MainLayout from "../layouts/MainLayout";
-
+import PageHeader from "../components/common/PageHeader";
+import ReportsHeader from "../components/reports/ReportsHeader";
+import ReportFilters from "../components/reports/ReportFilters";
 import ReportSummary from "../components/reports/ReportSummary";
-import FinancialReport from "../components/reports/FinancialReport";
+import ReportTabs from "../components/reports/ReportTabs";
+import SalesReport from "../components/reports/SalesReport";
+import InvoiceReport from "../components/reports/InvoiceReport";
+import PaymentReport from "../components/reports/PaymentReport";
+import ExpenseReport from "../components/reports/ExpenseReport";
 import InventoryReport from "../components/reports/InventoryReport";
-import ClientReport from "../components/reports/ClientReport";
-import BusinessAnalytics from "../components/reports/BusinessAnalytics";
+import ExportActions from "../components/reports/ExportActions";
+
+const reports = {
+  sales: SalesReport,
+  invoices: InvoiceReport,
+  payments: PaymentReport,
+  expenses: ExpenseReport,
+  inventory: InventoryReport,
+};
 
 function Reports() {
+  const [activeTab, setActiveTab] = useState("sales");
+  const ActiveReport = reports[activeTab];
+
   return (
     <MainLayout>
-      <div className="space-y-8">
+      <PageHeader
+        title="Reports"
+        subtitle="Review your business performance and financial activity."
+      />
 
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-slate-800">
-            Reports Dashboard
-          </h1>
-
-          <p className="text-slate-500 mt-2">
-            Monitor your business performance,
-            financial health and customer activity
-            from one place.
-          </p>
-        </div>
-
-        {/* Summary */}
-        <ReportSummary />
-
-        {/* Financial */}
-        <FinancialReport />
-
-        {/* Inventory */}
-        <InventoryReport />
-
-        {/* Client */}
-        <ClientReport />
-
-        {/* Business Analytics */}
-        <BusinessAnalytics />
-
-      </div>
+      <ReportsHeader />
+      <ReportFilters />
+      <ReportSummary />
+      <ReportTabs activeTab={activeTab} onTabChange={setActiveTab} />
+      <ActiveReport />
+      <ExportActions />
     </MainLayout>
   );
 }

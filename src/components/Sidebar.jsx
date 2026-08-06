@@ -6,14 +6,18 @@ const menuItems = [
   { name: "Projects", path: "/projects" },
   { name: "Quotations", path: "/quotations" },
   { name: "Invoices", path: "/invoices" },
+  { name: "Receipts", path: "/receipts" }, // NEW
   { name: "Inventory", path: "/inventory" },
 
-  // NEW
+  // Procurement
   { name: "Suppliers", path: "/suppliers" },
   { name: "Purchase Orders", path: "/purchase-orders" },
 
+  // Finance
   { name: "Expenses", path: "/expenses" },
   { name: "Reports", path: "/reports" },
+
+  // System
   { name: "Settings", path: "/settings" },
 ];
 

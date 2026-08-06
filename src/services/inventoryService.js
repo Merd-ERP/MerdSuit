@@ -38,3 +38,28 @@ export function deleteItem(id) {
     JSON.stringify(inventory)
   );
 }
+
+export function deductStock(description, quantity) {
+  const inventory = getInventory().map((item) => {
+    // Match using item name
+    if (
+      item.name &&
+      item.name.toLowerCase() === description.toLowerCase()
+    ) {
+      return {
+        ...item,
+        quantity: Math.max(
+          0,
+          Number(item.quantity) - Number(quantity)
+        ),
+      };
+    }
+
+    return item;
+  });
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify(inventory)
+  );
+}

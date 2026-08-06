@@ -1,13 +1,16 @@
 import { useState } from "react";
+import { useApp } from "../context/AppContext";
 import { useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import {
   getInvoices,
   updateInvoice,
 } from "../services/invoiceService";
+import { createPaymentReceipt } from "../services/paymentReceipt";
 
 function InvoiceDetails() {
   const { id } = useParams();
+  const { deductInventoryFromInvoice } = useApp();
 
   const invoices = getInvoices();
 
@@ -58,16 +61,29 @@ function InvoiceDetails() {
       updatedInvoice.amountPaid;
 
     if (updatedInvoice.balance <= 0) {
-      updatedInvoice.status = "Paid";
-    } else if (updatedInvoice.amountPaid > 0) {
-      updatedInvoice.status = "Partially Paid";
-    } else {
-      updatedInvoice.status = "Unpaid";
-    }
+  updatedInvoice.status = "Paid";
+} else if (updatedInvoice.amountPaid > 0) {
+  updatedInvoice.status = "Partially Paid";
+} else {
+  updatedInvoice.status = "Unpaid";
+}
 
-    updateInvoice(updatedInvoice);
+updateInvoice(updatedInvoice);
 
-    window.location.reload();
+// Deduct stock ONLY once
+if (updatedInvoice.status === "Paid") {
+  deductInventoryFromInvoice(updatedInvoice.materials);
+}
+
+// Create receipt
+createPaymentReceipt(updatedInvoice, {
+  amount,
+  method: payment.method,
+  reference: payment.reference,
+  date: payment.date,
+});
+
+window.location.reload();
   }
 
   if (!invoice) {

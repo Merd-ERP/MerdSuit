@@ -1,64 +1,25 @@
-import { useState, useEffect } from "react";
+import Card from "../common/Card";
 
 function LogoUploader({ logo, onLogoChange }) {
-  const [preview, setPreview] = useState(logo || "");
-
-  useEffect(() => {
-    setPreview(logo || "");
-  }, [logo]);
-
-  function handleFileChange(e) {
-    const file = e.target.files[0];
-
+  function handleFileChange(event) {
+    const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-
-    reader.onloadend = () => {
-      const base64 = reader.result;
-
-      setPreview(base64);
-      onLogoChange(base64);
-    };
-
+    reader.onloadend = () => onLogoChange(reader.result);
     reader.readAsDataURL(file);
   }
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold">
-        Company Logo
-      </h2>
-
-      <div className="flex items-center gap-6">
-        <div className="w-32 h-32 border-2 border-dashed rounded-xl flex items-center justify-center overflow-hidden bg-gray-50">
-          {preview ? (
-            <img
-              src={preview}
-              alt="Company Logo"
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <span className="text-gray-400 text-sm text-center px-2">
-              No Logo
-            </span>
-          )}
+    <Card>
+      <h2 className="text-xl font-semibold text-slate-800">Branding</h2>
+      <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
+        <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50">
+          {logo ? <img src={logo} alt="Company logo" className="h-full w-full object-contain" /> : <span className="px-2 text-center text-sm text-slate-400">No logo</span>}
         </div>
-
-        <div>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileChange}
-            className="block"
-          />
-
-          <p className="text-sm text-gray-500 mt-2">
-            PNG, JPG or SVG recommended.
-          </p>
-        </div>
+        <div><label className="inline-flex cursor-pointer rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-900"><span>{logo ? "Change Logo" : "Upload Company Logo"}</span><input type="file" accept="image/*" onChange={handleFileChange} className="sr-only" /></label><p className="mt-2 text-sm text-slate-500">PNG, JPG, or SVG recommended.</p></div>
       </div>
-    </div>
+    </Card>
   );
 }
 

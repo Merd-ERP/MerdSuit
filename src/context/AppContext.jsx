@@ -134,6 +134,28 @@ const [expenses, setExpenses] = useState(
       )
     );
   }
+  function deductInventoryFromInvoice(materials) {
+  setInventory((prev) =>
+    prev.map((inventoryItem) => {
+      const soldItem = materials.find(
+        (material) =>
+          material.description.trim().toLowerCase() ===
+          inventoryItem.name.trim().toLowerCase()
+      );
+
+      if (!soldItem) return inventoryItem;
+
+      return {
+        ...inventoryItem,
+        quantity: Math.max(
+          0,
+          Number(inventoryItem.quantity) -
+            Number(soldItem.quantity)
+        ),
+      };
+    })
+  );
+}
 
   // ===========================
   // Suppliers
@@ -274,7 +296,8 @@ function deleteExpense(id) {
         deleteInventoryItem,
         stockIn,
         stockOut,
-
+        deductInventoryFromInvoice,
+        
         // Suppliers
         suppliers,
         setSuppliers,
