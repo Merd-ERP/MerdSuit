@@ -1,0 +1,7 @@
+import Button from "../common/Button";
+
+function PurchaseOrderItems({ items, inventory, onAddItem, onRemoveItem, onUpdateItem }) {
+  return <div><div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-semibold text-slate-800">Order Items</h3><Button variant="secondary" onClick={onAddItem}>+ Add Item</Button></div>{items.length === 0 ? <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Add inventory items to this purchase order.</p> : items.map((item, index) => <div key={index} className="mb-3 grid gap-3 rounded-xl bg-slate-50 p-3 md:grid-cols-5"><select className="rounded-lg border border-slate-300 p-2" value={item.inventoryId} onChange={(event) => onUpdateItem(index, "inventoryId", event.target.value)}><option value="">Select Inventory Item</option>{inventory.map((inventoryItem) => <option key={inventoryItem.id} value={inventoryItem.id}>{inventoryItem.name}</option>)}</select><input className="rounded-lg border border-slate-300 p-2" type="number" min="1" value={item.quantity} onChange={(event) => onUpdateItem(index, "quantity", Number(event.target.value))} /><input className="rounded-lg border border-slate-300 bg-white p-2" value={item.price} readOnly /><input className="rounded-lg border border-slate-300 bg-white p-2" value={(Number(item.quantity) * Number(item.price)).toFixed(2)} readOnly /><Button variant="danger" onClick={() => onRemoveItem(index)}>Remove</Button></div>)}</div>;
+}
+
+export default PurchaseOrderItems;
