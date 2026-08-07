@@ -1,23 +1,13 @@
 import MainLayout from "../layouts/MainLayout";
-import InvoiceHistory from "../components/invoices/InvoiceHistory";
-import InvoiceSummary from "../components/invoices/InvoiceSummary";
+import Card from "../components/common/Card";
+import PageHeader from "../components/common/PageHeader";
+import InvoiceHeader from "../components/invoices/InvoiceHeader";
+import InvoiceStats from "../components/invoices/InvoiceStats";
+import InvoiceQuickActions from "../components/invoices/InvoiceQuickActions";
+import InvoiceTable from "../components/invoices/InvoiceTable";
 
 function Invoices() {
-  return (
-    <MainLayout>
-      <h1 className="text-4xl font-bold mb-6">
-        Invoices
-      </h1>
-
-      <div className="bg-white rounded-xl shadow p-6">
-
-  <InvoiceSummary />
-
-  <InvoiceHistory />
-
-</div>
-    </MainLayout>
-  );
+  return <MainLayout><PageHeader title="Invoices" subtitle="Track invoice status and customer payments." /><InvoiceHeader /><InvoiceStats /><InvoiceQuickActions /><Card><InvoiceTable /></Card></MainLayout>;
 }
 
 export default Invoices;
