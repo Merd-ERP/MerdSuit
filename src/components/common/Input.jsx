@@ -5,11 +5,12 @@ function Input({
   onChange,
   placeholder = "",
   className = "",
+  error = "",
 }) {
   return (
     <div className={className}>
       {label && (
-        <label className="block mb-2 font-medium text-gray-700">
+        <label className="block mb-2 text-sm font-medium text-slate-700">
           {label}
         </label>
       )}
@@ -19,8 +20,10 @@ function Input({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        aria-invalid={Boolean(error)}
+        className={`min-h-11 w-full rounded-lg border p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 ${error ? "border-red-500" : "border-slate-300"}`}
       />
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>
   );
 }

@@ -1,16 +1,16 @@
 function PageHeader({ title, subtitle }) {
   return (
-    <div className="mb-6">
-      <h1 className="text-4xl font-bold">
+    <header className="mb-6 sm:mb-8">
+      <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
         {title}
       </h1>
 
       {subtitle && (
-        <p className="text-gray-500 mt-1">
+        <p className="mt-2 text-sm text-slate-500 sm:text-base">
           {subtitle}
         </p>
       )}
-    </div>
+    </header>
   );
 }
 
