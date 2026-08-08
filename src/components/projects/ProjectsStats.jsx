@@ -1,0 +1,1 @@
+import{useApp}from"../../context/AppContext";import Card from"../common/Card";function ProjectsStats(){const{projects}=useApp();return <Card className="mb-6"><p className="text-sm text-slate-500">Total Projects</p><p className="mt-2 text-2xl font-bold text-blue-600">{projects.length}</p></Card>}export default ProjectsStats;

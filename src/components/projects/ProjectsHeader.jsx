@@ -1,0 +1,1 @@
+function ProjectsHeader(){return <div className="mb-6"><h2 className="text-xl font-semibold">Project management</h2><p className="text-sm text-slate-500">Track electrical work linked to clients.</p></div>}export default ProjectsHeader;

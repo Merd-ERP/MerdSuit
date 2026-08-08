@@ -1,0 +1,1 @@
+function ExpensesHeader(){return <div className="mb-6"><h2 className="text-xl font-semibold">Expense tracking</h2><p className="text-sm text-slate-500">Record project and business costs.</p></div>}export default ExpensesHeader;

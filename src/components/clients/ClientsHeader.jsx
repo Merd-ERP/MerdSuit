@@ -1,0 +1,1 @@
+function ClientsHeader(){return <div className="mb-6"><h2 className="text-xl font-semibold text-slate-800">Customer directory</h2><p className="mt-1 text-sm text-slate-500">Manage the clients linked to your projects and documents.</p></div>} export default ClientsHeader;
