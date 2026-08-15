@@ -1,6 +1,7 @@
 import MainLayout from "../layouts/MainLayout";
 import PageHeader from "../components/common/PageHeader";
 import CompanySettingsForm from "../components/settings/CompanySettingsForm";
+import BackupRestore from "../components/settings/BackupRestore";
 
 function Settings() {
   return (
@@ -11,6 +12,9 @@ function Settings() {
           subtitle="Manage the information used across your business documents."
         />
         <CompanySettingsForm />
+        <div className="mt-6">
+          <BackupRestore />
+        </div>
       </div>
     </MainLayout>
   );
