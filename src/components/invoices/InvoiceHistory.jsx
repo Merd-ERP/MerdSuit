@@ -3,25 +3,14 @@ import { Link } from "react-router-dom";
 
 import {
   getInvoices,
-  updateInvoice,
 } from "../../services/invoiceService";
+import { formatCurrency } from "../../utils/currency";
 
 function InvoiceHistory() {
   const invoices = getInvoices();
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-
-  function markAsPaid(invoice) {
-    updateInvoice({
-      ...invoice,
-      status: "Paid",
-    });
-
-    alert("Invoice marked as Paid.");
-
-    window.location.reload();
-  }
 
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
@@ -38,29 +27,30 @@ function InvoiceHistory() {
   return (
     <div className="mt-10">
 
-      <div className="flex justify-between items-center mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
         <h2 className="text-2xl font-bold">
           Saved Invoices
         </h2>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
 
           <input
             type="text"
             placeholder="Search invoice..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="border rounded-lg px-4 py-2"
+            className="w-full rounded-lg border px-4 py-2 sm:w-64"
           />
 
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className="border rounded-lg px-4 py-2"
+            className="w-full rounded-lg border px-4 py-2"
           >
             <option>All</option>
             <option>Paid</option>
+            <option>Partially Paid</option>
             <option>Unpaid</option>
           </select>
 
@@ -76,7 +66,8 @@ function InvoiceHistory() {
 
       ) : (
 
-        <table className="w-full border-collapse border">
+        <div className="overflow-x-auto rounded-xl border">
+        <table className="min-w-[720px] w-full border-collapse">
 
           <thead className="bg-gray-100">
 
@@ -110,7 +101,7 @@ function InvoiceHistory() {
                 </td>
 
                 <td className="border p-2">
-                  GH₵ {invoice.total.toLocaleString()}
+                  {formatCurrency(invoice.total)}
                 </td>
 
                 <td className="border p-2">
@@ -128,14 +119,14 @@ function InvoiceHistory() {
                       View
                     </Link>
 
-                    {invoice.status === "Unpaid" ? (
+                    {invoice.status !== "Paid" ? (
 
-                      <button
-                        onClick={() => markAsPaid(invoice)}
+                      <Link
+                        to={`/invoice/${invoice.id}`}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
                       >
-                        Mark Paid
-                      </button>
+                        Record Payment
+                      </Link>
 
                     ) : (
 
@@ -156,6 +147,7 @@ function InvoiceHistory() {
           </tbody>
 
         </table>
+        </div>
 
       )}
 

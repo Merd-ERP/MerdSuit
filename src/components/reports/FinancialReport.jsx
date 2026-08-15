@@ -7,6 +7,7 @@ import {
 
 import { useMemo } from "react";
 import { useApp } from "../../context/AppContext";
+import { formatCurrency } from "../../utils/currency";
 
 function FinancialReport() {
   const { quotations, invoices, expenses } = useApp();
@@ -125,7 +126,7 @@ function FinancialReport() {
               <div
                 className={`text-2xl font-bold ${item.valueColor}`}
               >
-                GH₵ {item.value.toLocaleString()}
+                {formatCurrency(item.value)}
               </div>
             </div>
           );

@@ -57,6 +57,7 @@ function CompanySettingsForm() {
     if (nextErrors.name || nextErrors.phone) return;
 
     localStorage.setItem("company", JSON.stringify(company));
+    window.dispatchEvent(new Event("company-settings-updated"));
     setSaved(true);
   }
 

@@ -1,4 +1,5 @@
 import { getInventory } from "../../services/inventoryService";
+import { formatCurrency } from "../../utils/currency";
 
 function InventorySummary() {
   const inventory = getInventory();
@@ -15,7 +16,7 @@ function InventorySummary() {
   );
 
   return (
-    <div className="grid grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
 
       <div className="bg-blue-50 rounded-xl shadow p-6">
 
@@ -36,7 +37,7 @@ function InventorySummary() {
         </h3>
 
         <p className="text-3xl font-bold text-green-700">
-          GH₵ {inventoryValue.toLocaleString()}
+          {formatCurrency(inventoryValue)}
         </p>
 
       </div>

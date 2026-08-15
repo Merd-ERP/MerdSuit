@@ -1,5 +1,33 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { getCompanyCurrency } from "../../utils/currency";
+import regularPdfFontUrl from "../../assets/fonts/SegoeUI.ttf?url";
+import boldPdfFontUrl from "../../assets/fonts/SegoeUI-Bold.ttf?url";
+
+export const pdfFontName = "MerdSuiteUnicode";
+let pdfFontData;
+
+async function fontAsBase64(fontUrl) {
+  const response = await fetch(fontUrl);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  let binary = "";
+
+  for (let index = 0; index < bytes.length; index += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+  }
+
+  return window.btoa(binary);
+}
+
+export async function registerPdfFont(doc) {
+  pdfFontData ??= Promise.all([fontAsBase64(regularPdfFontUrl), fontAsBase64(boldPdfFontUrl)]);
+  const [regular, bold] = await pdfFontData;
+  doc.addFileToVFS("SegoeUI.ttf", regular);
+  doc.addFileToVFS("SegoeUI-Bold.ttf", bold);
+  doc.addFont("SegoeUI.ttf", pdfFontName, "normal");
+  doc.addFont("SegoeUI-Bold.ttf", pdfFontName, "bold");
+  doc.setFont(pdfFontName, "normal");
+}
 
 /**
  * Create a new PDF document
@@ -24,7 +52,7 @@ export function getCompany() {
       address: "",
       city: "",
       country: "",
-      currency: "GH₵",
+      currency: getCompanyCurrency(),
       taxNumber: "",
       logo: "",
     }
@@ -46,11 +74,11 @@ export function addCompanyHeader(doc) {
   }
 
   doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
+  doc.setFont(pdfFontName, "bold");
   doc.text(company.name || "Company Name", 45, 18);
 
   doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
+  doc.setFont(pdfFontName, "normal");
 
   let y = 24;
 
@@ -86,6 +114,7 @@ export function addFooter(doc) {
     doc.setPage(i);
 
     doc.setFontSize(9);
+    doc.setFont(pdfFontName, "normal");
 
     doc.text(
       `Page ${i} of ${pageCount}`,

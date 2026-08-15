@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { convertQuotationToInvoice } from "../../services/quotationToInvoice";
 import { generateQuotationPDF } from "../../services/pdf/quotationPdf";
+import { formatCurrency } from "../../utils/currency";
 
 function QuotationHistory() {
   const {
@@ -96,7 +97,7 @@ function QuotationHistory() {
 
   return (
     <div className="mt-10">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-bold">
           Saved Quotations
         </h2>
@@ -106,7 +107,7 @@ function QuotationHistory() {
           placeholder="Search quotation..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="border rounded-lg px-4 py-2 w-72"
+          className="w-full rounded-lg border px-4 py-2 sm:w-72"
         />
       </div>
 
@@ -115,7 +116,8 @@ function QuotationHistory() {
           No quotations found.
         </div>
       ) : (
-        <table className="w-full border-collapse border rounded-xl overflow-hidden">
+        <div className="overflow-x-auto rounded-xl border">
+        <table className="min-w-[850px] w-full border-collapse">
           <thead className="bg-gray-100">
             <tr>
               <th className="border p-3">Quotation No.</th>
@@ -151,11 +153,7 @@ function QuotationHistory() {
                 </td>
 
                 <td className="border p-3 text-right">
-                  GH₵{" "}
-                  {Number(quotation.total).toLocaleString("en-GB", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {formatCurrency(quotation.total, { minimumFractionDigits: 2 })}
                 </td>
 
                 <td className="border p-3 text-center">
@@ -204,6 +202,7 @@ function QuotationHistory() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

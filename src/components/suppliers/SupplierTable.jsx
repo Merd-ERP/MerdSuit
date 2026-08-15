@@ -6,12 +6,14 @@ import { useToast } from "../../context/ToastContext";
 import Button from "../common/Button";
 import SearchBox from "../common/SearchBox";
 import EmptyState from "../common/EmptyState";
+import ConfirmDialog from "../common/ConfirmDialog";
 
 function SupplierTable({ setSupplierToEdit }) {
   const { suppliers, deleteSupplier } = useApp();
   const { showToast } = useToast();
 
   const [search, setSearch] = useState("");
+  const [supplierToDelete, setSupplierToDelete] = useState(null);
 
   const filteredSuppliers = suppliers.filter((supplier) =>
     [
@@ -26,19 +28,16 @@ function SupplierTable({ setSupplierToEdit }) {
       .includes(search.toLowerCase())
   );
 
-  function handleDelete(id) {
-    const confirmed = window.confirm(
-      "Delete this supplier?"
-    );
-
-    if (!confirmed) return;
-
-    deleteSupplier(id);
+  function handleDelete() {
+    deleteSupplier(supplierToDelete.id);
 
     showToast({
       type: "success",
-      message: "Supplier deleted successfully.",
+      title: "Supplier deleted",
+      message: "Supplier deleted successfully",
     });
+
+    setSupplierToDelete(null);
   }
 
   if (suppliers.length === 0) {
@@ -111,7 +110,7 @@ function SupplierTable({ setSupplierToEdit }) {
                     <Button
                       variant="danger"
                       onClick={() =>
-                        handleDelete(supplier.id)
+                        setSupplierToDelete(supplier)
                       }
                     >
                       Delete
@@ -123,6 +122,15 @@ function SupplierTable({ setSupplierToEdit }) {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(supplierToDelete)}
+        title="Delete Supplier?"
+        message={`Are you sure you want to delete ${supplierToDelete?.company || "this supplier"}? This action cannot be undone.`}
+        onCancel={() => setSupplierToDelete(null)}
+        onConfirm={handleDelete}
+        confirmLabel="Delete Supplier"
+      />
     </div>
   );
 }

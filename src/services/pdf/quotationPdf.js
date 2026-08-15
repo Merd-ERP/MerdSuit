@@ -3,20 +3,24 @@ import {
   addCompanyHeader,
   addFooter,
   autoTable,
+  pdfFontName,
+  registerPdfFont,
 } from "./pdfUtils";
+import { formatCurrency } from "../../utils/currency";
 
-export function generateQuotationPDF(quotation) {
+export async function generateQuotationPDF(quotation) {
   const doc = createPDF();
+  await registerPdfFont(doc);
 
   addCompanyHeader(doc);
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(pdfFontName, "bold");
   doc.setFontSize(18);
   doc.text("QUOTATION", 105, 55, {
     align: "center",
   });
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont(pdfFontName, "normal");
   doc.setFontSize(11);
 
   doc.text(
@@ -50,17 +54,19 @@ export function generateQuotationPDF(quotation) {
  body: quotation.materials.map((item) => [
   item.description,
   item.quantity,
-  `${quotation.currency || "GH₵"} ${item.price.toLocaleString()}`,
-  `${quotation.currency || "GH₵"} ${(item.quantity * item.price).toLocaleString()}`,
+  formatCurrency(item.price),
+  formatCurrency(item.quantity * item.price),
 ]),
+    styles: { font: pdfFontName },
+    headStyles: { font: pdfFontName, fontStyle: "bold" },
   });
 
   const finalY = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || 90) + 10;
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(pdfFontName, "bold");
 
   doc.text(
-    `Grand Total: ${quotation.currency || "GH₵"} ${quotation.total.toLocaleString()}`,
+    `Grand Total: ${formatCurrency(quotation.total)}`,
     150,
     finalY,
     {

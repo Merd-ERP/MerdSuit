@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
+import { formatCurrency } from "../../utils/currency";
 
 function ClientReport() {
   const {
@@ -122,11 +123,11 @@ function ClientReport() {
                 </td>
 
                 <td className="text-right p-4">
-                  GH₵ {client.quotationValue.toLocaleString()}
+                  {formatCurrency(client.quotationValue)}
                 </td>
 
                 <td className="text-right p-4 text-green-700 font-semibold">
-                  GH₵ {client.invoiceValue.toLocaleString()}
+                  {formatCurrency(client.invoiceValue)}
                 </td>
               </tr>
             ))}

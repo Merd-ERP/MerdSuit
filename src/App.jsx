@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
@@ -24,8 +25,16 @@ import Settings from "./pages/Settings";
 import CompanyProfile from "./pages/CompanyProfile";
 
 function App() {
+  const [currencyVersion, setCurrencyVersion] = useState(0);
+
+  useEffect(() => {
+    const refreshCurrency = () => setCurrencyVersion((version) => version + 1);
+    window.addEventListener("company-settings-updated", refreshCurrency);
+    return () => window.removeEventListener("company-settings-updated", refreshCurrency);
+  }, []);
+
   return (
-    <Routes>
+    <Routes key={currencyVersion}>
 
       {/* Dashboard */}
       <Route

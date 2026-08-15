@@ -1,4 +1,5 @@
 import { getInvoices } from "../../services/invoiceService";
+import { formatCurrency } from "../../utils/currency";
 
 function InvoiceSummary() {
   const invoices = getInvoices();
@@ -19,7 +20,7 @@ function InvoiceSummary() {
   );
 
   return (
-    <div className="grid grid-cols-4 gap-5 mb-8">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-8">
 
       <div className="bg-blue-50 rounded-xl p-5 shadow">
         <h3 className="text-gray-500">Invoices</h3>
@@ -51,7 +52,7 @@ function InvoiceSummary() {
         </h3>
 
         <p className="text-2xl font-bold text-yellow-700">
-          GH₵ {totalRevenue.toLocaleString()}
+          {formatCurrency(totalRevenue)}
         </p>
       </div>
 

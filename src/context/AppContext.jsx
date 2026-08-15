@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 const AppContext = createContext();
 
@@ -37,10 +37,11 @@ export function AppProvider({ children }) {
       JSON.parse(localStorage.getItem("purchaseOrders")) || []
   );
   // Expenses
-const [expenses, setExpenses] = useState(
+  const [expenses, setExpenses] = useState(
   () =>
     JSON.parse(localStorage.getItem("expenses")) || []
 );
+  const receivingOrderIds = useRef(new Set());
 
   // ===========================
   // Local Storage
@@ -206,46 +207,67 @@ const [expenses, setExpenses] = useState(
   }
 
   function receivePurchaseOrder(orderId) {
-  const order = purchaseOrders.find(
-    (po) => po.id === orderId
-  );
+    const order = purchaseOrders.find((po) => String(po.id) === String(orderId));
+    const orderKey = String(orderId);
 
-  if (!order) return;
+    if (!order) return { success: false, message: "Purchase order not found." };
+    if (String(order.status).toLowerCase() === "received" || receivingOrderIds.current.has(orderKey)) {
+      return { success: false, message: "This purchase order has already been received." };
+    }
 
-  if (order.status === "Received") return;
+    const additions = new Map();
+    const unmatchedItems = [];
 
-  // Update inventory
-  setInventory((prevInventory) =>
-    prevInventory.map((inventoryItem) => {
-      const receivedItem = order.items.find(
-        (item) =>
-          String(item.inventoryId) ===
-          String(inventoryItem.id)
+    (order.items || []).forEach((item) => {
+      const quantity = Number(item.quantity ?? item.qty ?? item.receivedQuantity);
+      const inventoryId = item.inventoryId ?? item.inventoryItemId ?? item.linkedInventoryId ?? item.itemId ?? item.inventory?.id;
+      const itemName = item.itemName ?? item.inventoryName ?? item.name ?? item.description ?? item.materialName ?? item.inventory?.name;
+      const inventoryItem = inventoryId !== undefined && inventoryId !== ""
+        ? inventory.find((entry) => String(entry.id) === String(inventoryId))
+        : inventory.find((entry) => String(entry.name || "").trim().toLowerCase() === String(itemName || "").trim().toLowerCase());
+
+      if (!inventoryItem || !Number.isFinite(quantity) || quantity <= 0) {
+        unmatchedItems.push(itemName || "an order item");
+        return;
+      }
+
+      additions.set(
+        String(inventoryItem.id),
+        (additions.get(String(inventoryItem.id)) || 0) + quantity,
       );
+    });
 
-      if (!receivedItem) return inventoryItem;
-
+    if (additions.size === 0 || unmatchedItems.length > 0) {
       return {
-        ...inventoryItem,
-        quantity:
-          Number(inventoryItem.quantity) +
-          Number(receivedItem.quantity),
+        success: false,
+        message: unmatchedItems.length
+          ? `Unable to match ${unmatchedItems.join(", ")} to inventory. Select a linked inventory item before receiving.`
+          : "This purchase order has no receivable items.",
       };
-    })
-  );
+    }
 
-  // Mark purchase order as received
-  setPurchaseOrders((prevOrders) =>
-    prevOrders.map((po) =>
-      po.id === orderId
-        ? {
-            ...po,
-            status: "Received",
-          }
-        : po
-    )
-  );
-}
+    receivingOrderIds.current.add(orderKey);
+    const nextInventory = inventory.map((inventoryItem) => {
+      const receivedQuantity = additions.get(String(inventoryItem.id));
+      return receivedQuantity === undefined
+        ? inventoryItem
+        : { ...inventoryItem, quantity: (Number(inventoryItem.quantity) || 0) + receivedQuantity };
+    });
+    const nextPurchaseOrders = purchaseOrders.map((purchaseOrder) =>
+      String(purchaseOrder.id) === orderKey
+        ? { ...purchaseOrder, status: "Received" }
+        : purchaseOrder,
+    );
+
+    // Persist both sides of the receipt transaction immediately using the
+    // same keys already used by the context persistence effects.
+    localStorage.setItem("inventory", JSON.stringify(nextInventory));
+    localStorage.setItem("purchaseOrders", JSON.stringify(nextPurchaseOrders));
+    setInventory(nextInventory);
+    setPurchaseOrders(nextPurchaseOrders);
+
+    return { success: true };
+  }
 // ===========================
 // Expenses
 // ===========================

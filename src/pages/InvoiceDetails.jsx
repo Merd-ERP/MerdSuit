@@ -1,16 +1,23 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import {
   getInvoices,
   updateInvoice,
+  deleteInvoice,
 } from "../services/invoiceService";
 import { createPaymentReceipt } from "../services/paymentReceipt";
+import ConfirmDialog from "../components/common/ConfirmDialog";
+import { useToast } from "../context/ToastContext";
+import { formatCurrency } from "../utils/currency";
 
 function InvoiceDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { showToast } = useToast();
   const { deductInventoryFromInvoice } = useApp();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const invoices = getInvoices();
 
@@ -86,6 +93,16 @@ createPaymentReceipt(updatedInvoice, {
 window.location.reload();
   }
 
+  function handleDelete() {
+    deleteInvoice(invoice.id);
+    showToast({
+      type: "success",
+      title: "Invoice deleted",
+      message: "Invoice deleted successfully",
+    });
+    navigate("/invoices");
+  }
+
   if (!invoice) {
     return (
       <MainLayout>
@@ -100,13 +117,13 @@ window.location.reload();
     <MainLayout>
       <div
         id="invoice-print"
-        className="bg-white rounded-xl shadow-lg p-8"
+        className="bg-white rounded-xl shadow-lg p-4 sm:p-8"
       >
         {/* Header */}
 
-        <div className="flex justify-between items-start border-b pb-8 mb-8">
+        <div className="invoice-print-header flex flex-col items-start gap-6 border-b pb-8 mb-8 lg:flex-row lg:justify-between">
 
-          <div className="flex gap-5">
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:gap-5">
 
             {company.logo && (
               <img
@@ -116,9 +133,9 @@ window.location.reload();
               />
             )}
 
-            <div>
+            <div className="min-w-0 break-words">
 
-              <h1 className="text-4xl font-bold">
+              <h1 className="break-words text-3xl font-bold sm:text-4xl">
                 {company.name}
               </h1>
 
@@ -138,9 +155,9 @@ window.location.reload();
 
           </div>
 
-          <div className="text-right">
+          <div className="w-full min-w-0 lg:w-auto lg:text-right">
 
-            <h2 className="text-5xl font-bold">
+            <h2 className="text-4xl font-bold sm:text-5xl">
               INVOICE
             </h2>
 
@@ -152,7 +169,7 @@ window.location.reload();
               {invoice.status}
             </span>
 
-            <div className="mt-5 flex gap-2 justify-end">
+            <div className="no-print mt-5 flex flex-wrap justify-start gap-2 lg:justify-end">
 
               <button
                 onClick={() => window.print()}
@@ -168,6 +185,13 @@ window.location.reload();
                 Back
               </button>
 
+              <button
+                onClick={() => setIsDeleteOpen(true)}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+              >
+                Delete Invoice
+              </button>
+
             </div>
 
           </div>
@@ -176,7 +200,7 @@ window.location.reload();
 
         {/* Customer */}
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="invoice-print-customer grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
           <div className="bg-slate-50 p-5 rounded-xl">
 
@@ -230,11 +254,11 @@ window.location.reload();
 
         {/* Materials */}
 
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="invoice-print-materials-title text-2xl font-bold mb-4">
           Materials
         </h2>
 
-        <table className="w-full border border-collapse mb-10">
+        <table className="invoice-print-materials w-full border border-collapse mb-10">
 
           <thead className="bg-slate-100">
 
@@ -275,15 +299,11 @@ window.location.reload();
                 </td>
 
                 <td className="border p-3 text-right">
-                  GH₵ {Number(item.price).toLocaleString()}
+                  {formatCurrency(item.price)}
                 </td>
 
                 <td className="border p-3 text-right">
-                  GH₵{" "}
-                  {(
-                    Number(item.price) *
-                    Number(item.quantity)
-                  ).toLocaleString()}
+                  {formatCurrency(Number(item.price) * Number(item.quantity))}
                 </td>
 
               </tr>
@@ -295,28 +315,28 @@ window.location.reload();
         </table>
                 {/* Totals */}
 
-        <div className="flex justify-end mb-10">
+        <div className="invoice-print-totals flex justify-end mb-10">
 
           <div className="w-96 bg-white rounded-xl border shadow-lg p-6">
 
             <div className="flex justify-between py-2">
               <span>Labour</span>
               <span>
-                GH₵ {Number(invoice.labour || 0).toLocaleString()}
+                {formatCurrency(invoice.labour)}
               </span>
             </div>
 
             <div className="flex justify-between py-2">
               <span>Transport</span>
               <span>
-                GH₵ {Number(invoice.transport || 0).toLocaleString()}
+                {formatCurrency(invoice.transport)}
               </span>
             </div>
 
             <div className="flex justify-between py-2">
               <span>Discount</span>
               <span>
-                -GH₵ {Number(invoice.discount || 0).toLocaleString()}
+                -{formatCurrency(invoice.discount)}
               </span>
             </div>
 
@@ -325,18 +345,14 @@ window.location.reload();
             <div className="flex justify-between font-semibold">
               <span>Total Paid</span>
               <span>
-                GH₵ {Number(invoice.amountPaid || 0).toLocaleString()}
+                {formatCurrency(invoice.amountPaid)}
               </span>
             </div>
 
             <div className="flex justify-between font-semibold mt-2">
               <span>Balance</span>
               <span className="text-red-600">
-                GH₵{" "}
-                {Number(
-                  invoice.balance ??
-                    invoice.total - (invoice.amountPaid || 0)
-                ).toLocaleString()}
+                {formatCurrency(invoice.balance ?? invoice.total - (invoice.amountPaid || 0))}
               </span>
             </div>
 
@@ -347,7 +363,7 @@ window.location.reload();
               <span>Grand Total</span>
 
               <span>
-                GH₵ {Number(invoice.total).toLocaleString()}
+                {formatCurrency(invoice.total)}
               </span>
 
             </div>
@@ -358,13 +374,13 @@ window.location.reload();
 
         {/* Record Payment */}
 
-        <div className="border rounded-xl p-6 bg-slate-50 mb-10">
+        <div className="no-print mb-10 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
 
           <h2 className="text-2xl font-bold mb-6">
             Record Payment
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
 
             <input
               type="number"
@@ -426,14 +442,14 @@ window.location.reload();
             onClick={savePayment}
             className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg"
           >
-            Save Payment
+            Record Payment
           </button>
 
         </div>
 
         {/* Payment History */}
 
-        <div>
+        <div className="no-print break-inside-avoid">
 
           <h2 className="text-2xl font-bold mb-4">
             Payment History
@@ -447,9 +463,10 @@ window.location.reload();
 
           ) : (
 
-            <table className="w-full border border-collapse">
+            <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="w-full min-w-[620px] border-collapse text-sm">
 
-              <thead className="bg-slate-100">
+              <thead className="bg-slate-100 text-left text-slate-600">
 
                 <tr>
 
@@ -479,20 +496,20 @@ window.location.reload();
 
                   <tr key={pay.id}>
 
-                    <td className="border p-3">
+                    <td className="border-b border-slate-100 p-3">
                       {pay.date}
                     </td>
 
-                    <td className="border p-3">
+                    <td className="border-b border-slate-100 p-3">
                       {pay.method}
                     </td>
 
-                    <td className="border p-3">
+                    <td className="border-b border-slate-100 p-3 text-slate-600">
                       {pay.reference || "-"}
                     </td>
 
-                    <td className="border p-3 text-right">
-                      GH₵ {Number(pay.amount).toLocaleString()}
+                    <td className="border-b border-slate-100 p-3 text-right font-semibold text-emerald-700">
+                      {formatCurrency(pay.amount)}
                     </td>
 
                   </tr>
@@ -502,12 +519,22 @@ window.location.reload();
               </tbody>
 
             </table>
+            </div>
 
           )}
 
         </div>
 
       </div>
+
+      <ConfirmDialog
+        isOpen={isDeleteOpen}
+        title="Delete Invoice?"
+        message={`Are you sure you want to delete invoice ${invoice.invoiceNumber}? This action cannot be undone.`}
+        onCancel={() => setIsDeleteOpen(false)}
+        onConfirm={handleDelete}
+        confirmLabel="Delete Invoice"
+      />
 
     </MainLayout>
   );

@@ -2,13 +2,12 @@ import { useParams } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import { useApp } from "../context/AppContext";
 import { generateQuotationPDF } from "../services/pdf/quotationPdf";
+import { formatCurrency, getCompanyCurrency } from "../utils/currency";
 
 function QuotationDetails() {
   const { id } = useParams();
 
   const { quotations } = useApp();
-  console.log("Route ID:", id);
-console.log("Quotations:", quotations);
 
   const quotation = quotations.find(
     (q) => q.id.toString() === id
@@ -31,12 +30,12 @@ console.log("Quotations:", quotations);
     <MainLayout>
       <div
         id="quotation-print"
-        className="bg-white rounded-xl shadow p-8"
+        className="bg-white rounded-xl shadow p-4 sm:p-8"
       >
         {/* Header */}
-<div className="flex justify-between items-start border-b pb-8 mb-8">
+<div className="quotation-print-header flex flex-col items-start gap-6 border-b pb-8 mb-8 lg:flex-row lg:justify-between">
 
-  <div className="flex gap-6 items-start">
+  <div className="flex min-w-0 flex-col items-start gap-4 sm:flex-row sm:gap-6">
 
     {company.logo && (
       <img
@@ -46,9 +45,9 @@ console.log("Quotations:", quotations);
       />
     )}
 
-    <div>
+    <div className="min-w-0 break-words">
 
-      <h1 className="text-4xl font-bold text-slate-900">
+      <h1 className="break-words text-3xl font-bold text-slate-900 sm:text-4xl">
         {company.name}
       </h1>
 
@@ -72,9 +71,9 @@ console.log("Quotations:", quotations);
 
   </div>
 
-  <div className="text-right">
+  <div className="w-full min-w-0 lg:w-auto lg:text-right">
 
-    <h2 className="text-5xl font-bold text-slate-800">
+    <h2 className="text-4xl font-bold text-slate-800 sm:text-5xl">
       QUOTATION
     </h2>
 
@@ -104,9 +103,9 @@ console.log("Quotations:", quotations);
 
 </div>
 
-        <hr className="my-8" />
+        <hr className="quotation-print-separator my-8" />
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div className="quotation-print-customer grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
   <div className="bg-slate-50 rounded-xl p-5 shadow-sm">
 
@@ -151,22 +150,22 @@ console.log("Quotations:", quotations);
     </p>
 
     <h3 className="text-xl font-bold mt-2">
-      {quotation.currency || "GH₵"}
+      {getCompanyCurrency()}
     </h3>
 
   </div>
 
 </div>
 
-        <hr className="my-8" />
+        <hr className="quotation-print-separator my-8" />
 
         {/* Materials */}
 
-        <h2 className="text-2xl font-bold mb-4">
+        <h2 className="quotation-print-materials-title text-2xl font-bold mb-4">
           Materials
         </h2>
 
-        <table className="w-full border border-collapse">
+        <table className="quotation-print-materials w-full border border-collapse">
 
           <thead className="bg-gray-100">
 
@@ -207,16 +206,11 @@ console.log("Quotations:", quotations);
                 </td>
 
                 <td className="border p-2 text-right">
-                  {(quotation.currency || "GH₵")}{" "}
-                  {Number(item.price).toLocaleString()}
+                  {formatCurrency(item.price)}
                 </td>
 
                 <td className="border p-2 text-right">
-                  {(quotation.currency || "GH₵")}{" "}
-                  {(
-                    Number(item.quantity) *
-                    Number(item.price)
-                  ).toLocaleString()}
+                  {formatCurrency(Number(item.quantity) * Number(item.price))}
                 </td>
 
               </tr>
@@ -226,44 +220,44 @@ console.log("Quotations:", quotations);
           </tbody>
 
         </table>
-        <div className="mt-10 flex justify-end">
+        <div className="quotation-print-totals mt-10 flex justify-end">
 
   <div className="w-96 bg-white rounded-xl border shadow-lg p-6">
-    <div className="flex justify-between py-2">
+    {Number(quotation.labour) > 0 && <div className="flex justify-between py-2">
       <span>Labour</span>
       <span>
-        {quotation.currency || "GH₵"} {Number(quotation.labour || 0).toLocaleString()}
+        {formatCurrency(quotation.labour)}
       </span>
-    </div>
+    </div>}
 
-    <div className="flex justify-between py-2">
+    {Number(quotation.transport) > 0 && <div className="flex justify-between py-2">
       <span>Transport</span>
       <span>
-        {quotation.currency || "GH₵"} {Number(quotation.transport || 0).toLocaleString()}
+        {formatCurrency(quotation.transport)}
       </span>
-    </div>
+    </div>}
 
-    <div className="flex justify-between py-2">
+    {Number(quotation.discount) > 0 && <div className="flex justify-between py-2">
       <span>Discount</span>
       <span className="text-red-600">
-        -{quotation.currency || "GH₵"} {Number(quotation.discount || 0).toLocaleString()}
+        -{formatCurrency(quotation.discount)}
       </span>
-    </div>
+    </div>}
 
     <hr className="my-4" />
 
     <div className="flex justify-between text-3xl font-bold text-green-700">
       <span>Grand Total</span>
       <span>
-        {quotation.currency || "GH₵"} {Number(quotation.total || 0).toLocaleString()}
+        {formatCurrency(quotation.total)}
       </span>
     </div>
 
   </div>
-  </div>    // End of the financial summary
+  </div>
 
 {/* Action Buttons */}
-<div className="flex justify-end gap-4 mt-8">
+<div className="no-print mt-8 flex flex-wrap justify-start gap-4 lg:justify-end">
 
   <button
     onClick={() => window.history.back()}

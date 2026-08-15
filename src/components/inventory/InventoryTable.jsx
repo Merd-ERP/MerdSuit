@@ -6,6 +6,8 @@ import { useToast } from "../../context/ToastContext";
 import Button from "../common/Button";
 import SearchBox from "../common/SearchBox";
 import EmptyState from "../common/EmptyState";
+import ConfirmDialog from "../common/ConfirmDialog";
+import { formatCurrency } from "../../utils/currency";
 
 function InventoryTable({ setItemToEdit }) {
   const { inventory, deleteInventoryItem } = useApp();
@@ -13,6 +15,7 @@ function InventoryTable({ setItemToEdit }) {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const filteredInventory = inventory.filter((item) => {
     const searchText = search.toLowerCase();
@@ -28,20 +31,16 @@ function InventoryTable({ setItemToEdit }) {
     return matchesSearch && matchesCategory;
   });
 
-  function handleDelete(id) {
-    const confirmed = window.confirm(
-      "Delete this inventory item?"
-    );
-
-    if (!confirmed) return;
-
-    deleteInventoryItem(id);
+  function handleDelete() {
+    deleteInventoryItem(itemToDelete.id);
 
     showToast({
       type: "success",
       title: "Deleted",
-      message: "Inventory item deleted successfully.",
+      message: "Inventory item deleted successfully",
     });
+
+    setItemToDelete(null);
   }
 
   return (
@@ -129,11 +128,11 @@ function InventoryTable({ setItemToEdit }) {
                   </td>
 
                   <td className="border p-2">
-                    GH₵ {Number(item.costPrice).toLocaleString()}
+                    {formatCurrency(item.costPrice)}
                   </td>
 
                   <td className="border p-2">
-                    GH₵ {Number(item.sellingPrice).toLocaleString()}
+                    {formatCurrency(item.sellingPrice)}
                   </td>
 
                   <td className="border p-2">
@@ -147,11 +146,20 @@ function InventoryTable({ setItemToEdit }) {
 
                       <Button
                         variant="danger"
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => setItemToDelete(item)}
                       >
                         Delete
                       </Button>
-                    </div>
+      </div>
+
+      <ConfirmDialog
+        isOpen={Boolean(itemToDelete)}
+        title="Delete Inventory Item?"
+        message={`Are you sure you want to delete ${itemToDelete?.name || "this item"}? This action cannot be undone.`}
+        onCancel={() => setItemToDelete(null)}
+        onConfirm={handleDelete}
+        confirmLabel="Delete Item"
+      />
                   </td>
                 </tr>
               ))}

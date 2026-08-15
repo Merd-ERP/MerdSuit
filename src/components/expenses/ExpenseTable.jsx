@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import Button from "../common/Button";
 import SearchBox from "../common/SearchBox";
 import EmptyState from "../common/EmptyState";
+import { formatCurrency } from "../../utils/currency";
 
 function ExpenseTable({ setExpenseToEdit }) {
   const {
@@ -17,6 +18,7 @@ function ExpenseTable({ setExpenseToEdit }) {
   const { showToast } = useToast();
 
   const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
 
   const filteredExpenses = expenses.filter((expense) => {
     const project = projects.find(
@@ -27,12 +29,14 @@ function ExpenseTable({ setExpenseToEdit }) {
 
     const text = search.toLowerCase();
 
-    return (
+    const matchesSearch = (
       expense.category.toLowerCase().includes(text) ||
       expense.description.toLowerCase().includes(text) ||
       expense.paymentMethod.toLowerCase().includes(text) ||
       projectName.toLowerCase().includes(text)
     );
+
+    return matchesSearch && (category === "All" || expense.category === category);
   });
 
   function handleDelete(id) {
@@ -53,11 +57,23 @@ function ExpenseTable({ setExpenseToEdit }) {
         Expenses
       </h2>
 
-      <SearchBox
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search Expenses..."
-      />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <SearchBox
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search Expenses..."
+        />
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="rounded-lg border border-slate-300 p-3"
+        >
+          <option>All</option>
+          <option>Labour</option><option>Transport</option><option>Fuel</option>
+          <option>Materials</option><option>Feeding</option><option>Utilities</option>
+          <option>Maintenance</option><option>Tools & Equipment</option><option>Miscellaneous</option>
+        </select>
+      </div>
 
       {filteredExpenses.length === 0 ? (
         <EmptyState
@@ -66,7 +82,7 @@ function ExpenseTable({ setExpenseToEdit }) {
         />
       ) : (
         <div className="overflow-x-auto mt-5">
-          <table className="w-full border-collapse border">
+          <table className="w-full min-w-[760px] border-collapse border">
             <thead className="bg-gray-100">
               <tr>
                 <th className="border p-2">Date</th>
@@ -110,7 +126,7 @@ function ExpenseTable({ setExpenseToEdit }) {
                     </td>
 
                     <td className="border p-2 font-semibold text-red-600">
-                      GH₵ {Number(expense.amount).toLocaleString()}
+                      {formatCurrency(expense.amount)}
                     </td>
 
                     <td className="border p-2">

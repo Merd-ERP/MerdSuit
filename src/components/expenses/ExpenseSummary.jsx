@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useApp } from "../../context/AppContext";
+import { formatCurrency } from "../../utils/currency";
 
 function ExpenseSummary() {
   const { expenses } = useApp();
@@ -49,7 +50,7 @@ function ExpenseSummary() {
         </h3>
 
         <p className="text-2xl font-bold text-red-600">
-          GH₵ {todayTotal.toLocaleString()}
+          {formatCurrency(todayTotal)}
         </p>
       </div>
 
@@ -59,7 +60,7 @@ function ExpenseSummary() {
         </h3>
 
         <p className="text-2xl font-bold text-orange-600">
-          GH₵ {monthTotal.toLocaleString()}
+          {formatCurrency(monthTotal)}
         </p>
       </div>
 
@@ -69,7 +70,7 @@ function ExpenseSummary() {
         </h3>
 
         <p className="text-2xl font-bold text-red-700">
-          GH₵ {totalExpenses.toLocaleString()}
+          {formatCurrency(totalExpenses)}
         </p>
       </div>
 

@@ -1,12 +1,6 @@
 import { useApp } from "../../context/AppContext";
 import StatCard from "./StatCard";
-
-const formatCurrency = (value) =>
-  new Intl.NumberFormat("en-GH", {
-    style: "currency",
-    currency: "GHS",
-    minimumFractionDigits: 2,
-  }).format(value);
+import { formatCurrency } from "../../utils/currency";
 
 const asNumber = (value) => Number(value) || 0;
 
@@ -29,8 +23,8 @@ function DashboardStats() {
     <section aria-label="Business summary" className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard label="Total Clients" value={clients.length} />
       <StatCard label="Active Projects" value={activeProjects} accentClass="text-indigo-600" />
-      <StatCard label="Revenue" value={formatCurrency(revenue)} accentClass="text-emerald-600" />
-      <StatCard label="Outstanding Payments" value={formatCurrency(outstanding)} accentClass="text-amber-600" />
+      <StatCard label="Revenue" value={formatCurrency(revenue, { minimumFractionDigits: 2 })} accentClass="text-emerald-600" />
+      <StatCard label="Outstanding Payments" value={formatCurrency(outstanding, { minimumFractionDigits: 2 })} accentClass="text-amber-600" />
     </section>
   );
 }

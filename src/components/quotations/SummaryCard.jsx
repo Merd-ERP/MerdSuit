@@ -1,3 +1,5 @@
+import { formatCurrency } from "../../utils/currency";
+
 function SummaryCard({
   materialTotal,
   labour,
@@ -6,39 +8,41 @@ function SummaryCard({
   finalTotal,
 }) {
   return (
-    <div className="flex justify-end mt-8">
-
-      <div className="w-96 bg-gray-50 rounded-xl shadow p-6">
-
-        <div className="flex justify-between mb-2">
+    <div className="mt-8 flex justify-end">
+      <div className="w-full max-w-sm rounded-xl bg-gray-50 p-6 shadow">
+        <div className="mb-2 flex justify-between">
           <span>Materials</span>
-          <span>GH₵ {materialTotal.toLocaleString()}</span>
+          <span>{formatCurrency(materialTotal)}</span>
         </div>
 
-        <div className="flex justify-between mb-2">
-          <span>Labour</span>
-          <span>GH₵ {Number(labour).toLocaleString()}</span>
-        </div>
+        {Number(labour) > 0 && (
+          <div className="mb-2 flex justify-between">
+            <span>Labour</span>
+            <span>{formatCurrency(labour)}</span>
+          </div>
+        )}
 
-        <div className="flex justify-between mb-2">
-          <span>Transport</span>
-          <span>GH₵ {Number(transport).toLocaleString()}</span>
-        </div>
+        {Number(transport) > 0 && (
+          <div className="mb-2 flex justify-between">
+            <span>Transport</span>
+            <span>{formatCurrency(transport)}</span>
+          </div>
+        )}
 
-        <div className="flex justify-between mb-2 text-red-600">
-          <span>Discount</span>
-          <span>- GH₵ {Number(discount).toLocaleString()}</span>
-        </div>
+        {Number(discount) > 0 && (
+          <div className="mb-2 flex justify-between text-red-600">
+            <span>Discount</span>
+            <span>- {formatCurrency(discount)}</span>
+          </div>
+        )}
 
         <hr className="my-3" />
 
         <div className="flex justify-between text-2xl font-bold text-green-700">
           <span>Grand Total</span>
-          <span>GH₵ {finalTotal.toLocaleString()}</span>
+          <span>{formatCurrency(finalTotal)}</span>
         </div>
-
       </div>
-
     </div>
   );
 }

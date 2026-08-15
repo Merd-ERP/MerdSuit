@@ -11,6 +11,19 @@ body,
 }
 @media print {
 
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
   /* Hide the sidebar */
   aside {
     display: none !important;
@@ -32,7 +45,10 @@ body,
   }
 
   /* Only show the invoice */
-  #invoice-print {
+  #invoice-print,
+  #quotation-print,
+  #report-print,
+  #receipt-print {
     width: 100%;
     margin: 0 auto;
     padding: 20px;
@@ -46,13 +62,185 @@ body,
   }
 
   #invoice-print,
-  #invoice-print * {
+  #invoice-print *,
+  #quotation-print,
+  #quotation-print *,
+  #report-print,
+  #report-print *,
+  #receipt-print,
+  #receipt-print * {
     visibility: visible;
   }
 
-  #invoice-print {
+  #invoice-print,
+  #quotation-print,
+  #report-print,
+  #receipt-print {
     position: absolute;
     left: 0;
     top: 0;
   }
+
+  #report-print .report-table { overflow: visible !important; }
+  #report-print .report-table table { min-width: 0 !important; width: 100% !important; table-layout: fixed; font-size: 8pt; }
+  #report-print .report-table th, #report-print .report-table td { overflow-wrap: anywhere; padding: 5px; }
+
+  /* Keep a typical invoice compact without altering its on-screen layout. */
+  #invoice-print {
+    padding: 0 !important;
+    font-size: 10pt;
+  }
+
+  #invoice-print .invoice-print-header {
+    margin-bottom: 3mm !important;
+    padding-bottom: 3mm !important;
+  }
+
+  #invoice-print .invoice-print-header h1 {
+    font-size: 20pt !important;
+  }
+
+  #invoice-print .invoice-print-header h2 {
+    font-size: 22pt !important;
+  }
+
+  #invoice-print .invoice-print-customer {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 3mm !important;
+    margin-bottom: 4mm !important;
+  }
+
+  #invoice-print .invoice-print-customer > div {
+    padding: 3mm !important;
+  }
+
+  #invoice-print .invoice-print-customer h3 {
+    margin-top: 1mm !important;
+    font-size: 11pt !important;
+  }
+
+  #invoice-print .invoice-print-materials-title {
+    margin-bottom: 2mm !important;
+    font-size: 14pt !important;
+  }
+
+  #invoice-print .invoice-print-materials {
+    margin-bottom: 3mm !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  #invoice-print .invoice-print-materials th,
+  #invoice-print .invoice-print-materials td {
+    padding: 1.5mm !important;
+  }
+
+  #invoice-print .invoice-print-totals {
+    margin-bottom: 0 !important;
+    break-before: avoid;
+    page-break-before: avoid;
+  }
+
+  #invoice-print .invoice-print-totals > div {
+    padding: 3mm !important;
+    box-shadow: none !important;
+  }
+
+  #invoice-print .invoice-print-totals hr {
+    margin-top: 2mm !important;
+    margin-bottom: 2mm !important;
+  }
+
+  /* Compact short quotations for A4 while retaining their screen layout. */
+  #quotation-print {
+    padding: 0 !important;
+    font-size: 10pt;
+  }
+
+  #quotation-print .quotation-print-header {
+    margin-bottom: 3mm !important;
+    padding-bottom: 3mm !important;
+  }
+
+  #quotation-print .quotation-print-header h1 {
+    font-size: 20pt !important;
+  }
+
+  #quotation-print .quotation-print-header h2 {
+    font-size: 22pt !important;
+  }
+
+  #quotation-print .quotation-print-header img {
+    width: 18mm !important;
+    height: 18mm !important;
+  }
+
+  #quotation-print .quotation-print-header .text-lg,
+  #quotation-print .quotation-print-header .space-y-1 {
+    font-size: 9pt !important;
+  }
+
+  #quotation-print .quotation-print-separator {
+    display: none;
+  }
+
+  #quotation-print .quotation-print-customer {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 3mm !important;
+    margin-bottom: 4mm !important;
+  }
+
+  #quotation-print .quotation-print-customer > div {
+    padding: 3mm !important;
+  }
+
+  #quotation-print .quotation-print-customer h3 {
+    margin-top: 1mm !important;
+    font-size: 11pt !important;
+  }
+
+  #quotation-print .quotation-print-materials-title {
+    margin-bottom: 2mm !important;
+    font-size: 14pt !important;
+  }
+
+  #quotation-print .quotation-print-materials {
+    margin-bottom: 3mm !important;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  #quotation-print .quotation-print-materials th,
+  #quotation-print .quotation-print-materials td {
+    padding: 1.5mm !important;
+  }
+
+  #quotation-print .quotation-print-totals {
+    margin-top: 3mm !important;
+    break-before: avoid;
+    page-break-before: avoid;
+  }
+
+  #quotation-print .quotation-print-totals > div {
+    padding: 3mm !important;
+    box-shadow: none !important;
+  }
+
+  #quotation-print .quotation-print-totals .py-2 {
+    padding-top: 1mm !important;
+    padding-bottom: 1mm !important;
+  }
+
+  #quotation-print .quotation-print-totals hr {
+    margin-top: 2mm !important;
+    margin-bottom: 2mm !important;
+  }
+
+  #quotation-print .quotation-print-totals .text-3xl {
+    font-size: 16pt !important;
+  }
+}
+
+.print-only {
+  display: none;
 }

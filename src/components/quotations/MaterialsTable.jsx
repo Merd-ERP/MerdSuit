@@ -1,3 +1,5 @@
+import { formatCurrency, getCompanyCurrency } from "../../utils/currency";
+
 function MaterialsTable({
   materials,
   addMaterial,
@@ -31,8 +33,8 @@ function MaterialsTable({
           <div className="grid grid-cols-5 gap-4 mb-3 font-semibold text-gray-700 border-b-2 pb-3">
             <div>Material</div>
             <div className="text-center">Quantity</div>
-            <div className="text-center">Unit Price (GH₵)</div>
-            <div className="text-right">Total (GH₵)</div>
+            <div className="text-center">Unit Price ({getCompanyCurrency()})</div>
+            <div className="text-right">Total ({getCompanyCurrency()})</div>
             <div className="text-center">Action</div>
           </div>
 
@@ -87,7 +89,7 @@ function MaterialsTable({
 
               {/* Total */}
               <div className="border rounded-lg p-3 bg-gray-100 text-right font-semibold">
-                GH₵ {(material.quantity * material.price).toLocaleString()}
+                {formatCurrency(material.quantity * material.price)}
               </div>
 
               {/* Delete */}

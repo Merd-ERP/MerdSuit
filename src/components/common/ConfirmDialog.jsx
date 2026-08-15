@@ -7,6 +7,7 @@ function ConfirmDialog({
   message,
   onCancel,
   onConfirm,
+  confirmLabel = "Delete",
 }) {
   return (
     <Modal
@@ -26,7 +27,7 @@ function ConfirmDialog({
             variant="danger"
             onClick={onConfirm}
           >
-            Delete
+            {confirmLabel}
           </Button>
         </>
       }

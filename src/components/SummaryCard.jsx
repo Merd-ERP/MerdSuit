@@ -1,3 +1,5 @@
+import { formatCurrency } from "../utils/currency";
+
 function SummaryCard({
   materialTotal,
   labour,
@@ -22,40 +24,28 @@ function SummaryCard({
           <div className="flex justify-between">
             <span>Materials</span>
             <span className="font-semibold">
-              GH₵ {materialTotal.toLocaleString("en-GB", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(materialTotal, { minimumFractionDigits: 2 })}
             </span>
           </div>
 
           <div className="flex justify-between">
             <span>Labour</span>
             <span className="font-semibold">
-              GH₵ {Number(labour).toLocaleString("en-GB", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(labour, { minimumFractionDigits: 2 })}
             </span>
           </div>
 
           <div className="flex justify-between">
             <span>Transport</span>
             <span className="font-semibold">
-              GH₵ {Number(transport).toLocaleString("en-GB", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(transport, { minimumFractionDigits: 2 })}
             </span>
           </div>
 
           <div className="flex justify-between text-red-600">
             <span>Discount</span>
             <span className="font-semibold">
-              - GH₵ {Number(discount).toLocaleString("en-GB", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              - {formatCurrency(discount, { minimumFractionDigits: 2 })}
             </span>
           </div>
 
@@ -68,10 +58,7 @@ function SummaryCard({
             </span>
 
             <span className="text-2xl font-bold text-green-700">
-              GH₵ {finalTotal.toLocaleString("en-GB", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
+              {formatCurrency(finalTotal, { minimumFractionDigits: 2 })}
             </span>
           </div>
 
