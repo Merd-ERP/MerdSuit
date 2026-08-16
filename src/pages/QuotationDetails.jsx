@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import MainLayout from "../layouts/MainLayout";
+import MainLayout from "../layouts/Mainlayout";
 import { useApp } from "../context/AppContext";
 import { generateQuotationPDF } from "../services/pdf/quotationPdf";
 import { formatCurrency, getCompanyCurrency } from "../utils/currency";

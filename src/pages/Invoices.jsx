@@ -1,4 +1,4 @@
-import MainLayout from "../layouts/MainLayout";
+import MainLayout from "../layouts/Mainlayout";
 import Card from "../components/common/Card";
 import PageHeader from "../components/common/PageHeader";
 import InvoiceHeader from "../components/invoices/InvoiceHeader";

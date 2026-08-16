@@ -1,4 +1,4 @@
-import MainLayout from "../layouts/MainLayout";
+import MainLayout from "../layouts/Mainlayout";
 import PageHeader from "../components/common/PageHeader";
 import CompanySettingsForm from "../components/settings/CompanySettingsForm";
 import BackupRestore from "../components/settings/BackupRestore";

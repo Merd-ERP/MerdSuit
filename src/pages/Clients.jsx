@@ -1,5 +1,5 @@
 import { useState } from "react";
-import MainLayout from "../layouts/MainLayout";
+import MainLayout from "../layouts/Mainlayout";
 import PageHeader from "../components/common/PageHeader";
 import ClientsHeader from "../components/clients/ClientsHeader";
 import ClientsStats from "../components/clients/ClientsStats";
