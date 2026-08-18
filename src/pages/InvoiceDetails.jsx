@@ -25,6 +25,24 @@ function InvoiceDetails() {
     (inv) => inv.id.toString() === id
   );
 
+  const invoiceTotal = Math.max(0, Number(invoice?.total) || 0);
+  const paymentHistoryTotal = (invoice?.payments || []).reduce(
+    (sum, recordedPayment) => sum + (Number(recordedPayment.amount) || 0),
+    0,
+  );
+  const currentAmountPaid = Math.max(
+    0,
+    Math.round(
+      ((invoice?.payments || []).length > 0
+        ? paymentHistoryTotal
+        : Number(invoice?.amountPaid) || 0) * 100,
+    ) / 100,
+  );
+  const remainingBalance = Math.max(
+    0,
+    Math.round((invoiceTotal - currentAmountPaid) * 100) / 100,
+  );
+
   const company =
     JSON.parse(localStorage.getItem("company")) || {};
 
@@ -47,6 +65,24 @@ function InvoiceDetails() {
       return;
     }
 
+    if (remainingBalance <= 0) {
+      showToast({
+        type: "warning",
+        title: "Invoice already paid",
+        message: "This invoice is fully paid. No additional payment can be recorded.",
+      });
+      return;
+    }
+
+    if (amount > remainingBalance) {
+      showToast({
+        type: "error",
+        title: "Payment exceeds balance",
+        message: `The maximum payment allowed is ${formatCurrency(remainingBalance)}.`,
+      });
+      return;
+    }
+
     const updatedInvoice = {
       ...invoice,
       payments: [
@@ -61,15 +97,17 @@ function InvoiceDetails() {
       ],
     };
 
-    updatedInvoice.amountPaid =
+    updatedInvoice.amountPaid = Math.round(
       updatedInvoice.payments.reduce(
-        (sum, pay) => sum + Number(pay.amount),
-        0
-      );
+        (sum, pay) => sum + (Number(pay.amount) || 0),
+        0,
+      ) * 100,
+    ) / 100;
 
-    updatedInvoice.balance =
-      updatedInvoice.total -
-      updatedInvoice.amountPaid;
+    updatedInvoice.balance = Math.max(
+      0,
+      Math.round((invoiceTotal - updatedInvoice.amountPaid) * 100) / 100,
+    );
 
     if (updatedInvoice.balance <= 0) {
   updatedInvoice.status = "Paid";
@@ -356,7 +394,7 @@ window.location.reload();
             <div className="flex justify-between font-semibold mt-2">
               <span>Balance</span>
               <span className="text-red-600">
-                {formatCurrency(invoice.balance ?? invoice.total - (invoice.amountPaid || 0))}
+                {formatCurrency(remainingBalance)}
               </span>
             </div>
 
@@ -389,6 +427,9 @@ window.location.reload();
             <input
               type="number"
               placeholder="Amount"
+              max={remainingBalance}
+              min="0.01"
+              step="0.01"
               value={payment.amount}
               onChange={(e) =>
                 setPayment({
