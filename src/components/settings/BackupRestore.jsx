@@ -75,7 +75,6 @@ function validateBackup(backup) {
 function BackupRestore() {
   const fileInputRef = useRef(null);
   const { showToast } = useToast();
-  const [restoreError, setRestoreError] = useState("");
   const [pendingBackup, setPendingBackup] = useState(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -97,11 +96,16 @@ function BackupRestore() {
       URL.revokeObjectURL(downloadUrl);
 
       showToast({
+        type: "success",
         title: "Backup exported",
         message: "Your MerdSuite backup file has been downloaded.",
       });
     } catch {
-      setRestoreError("Unable to export a backup because stored data is invalid.");
+      showToast({
+        type: "error",
+        title: "Backup export failed",
+        message: "Unable to export a backup because stored data is invalid.",
+      });
     }
   }
 
@@ -116,14 +120,21 @@ function BackupRestore() {
       const validationError = validateBackup(backup);
 
       if (validationError) {
-        setRestoreError(validationError);
+        showToast({
+          type: "error",
+          title: "Invalid backup file",
+          message: validationError,
+        });
         return;
       }
 
-      setRestoreError("");
       setPendingBackup(backup);
     } catch {
-      setRestoreError("This file is invalid or corrupted. No data has been changed.");
+      showToast({
+        type: "error",
+        title: "Invalid backup file",
+        message: "This file is invalid or corrupted. No data has been changed.",
+      });
     }
   }
 
@@ -160,7 +171,11 @@ function BackupRestore() {
       });
       setIsRestoring(false);
       setPendingBackup(null);
-      setRestoreError("Unable to restore this backup. Your existing data was not reloaded.");
+      showToast({
+        type: "error",
+        title: "Restore failed",
+        message: "Unable to restore this backup. Your existing data was not reloaded.",
+      });
     }
   }
 
@@ -172,12 +187,6 @@ function BackupRestore() {
           Download a complete copy of your MerdSuite data or restore a backup you exported earlier.
         </p>
       </div>
-
-      {restoreError && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-          {restoreError}
-        </div>
-      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

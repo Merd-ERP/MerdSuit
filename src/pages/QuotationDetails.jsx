@@ -3,9 +3,11 @@ import MainLayout from "../layouts/Mainlayout";
 import { useApp } from "../context/AppContext";
 import { generateQuotationPDF } from "../services/pdf/quotationPdf";
 import { formatCurrency, getCompanyCurrency } from "../utils/currency";
+import { useToast } from "../context/ToastContext";
 
 function QuotationDetails() {
   const { id } = useParams();
+  const { showToast } = useToast();
 
   const { quotations } = useApp();
 
@@ -15,6 +17,23 @@ function QuotationDetails() {
 
   const company =
     JSON.parse(localStorage.getItem("company")) || {};
+
+  async function downloadPdf() {
+    try {
+      await generateQuotationPDF(quotation);
+      showToast({
+        type: "success",
+        title: "PDF generated",
+        message: "Quotation PDF downloaded successfully.",
+      });
+    } catch {
+      showToast({
+        type: "error",
+        title: "PDF generation failed",
+        message: "Unable to generate the quotation PDF.",
+      });
+    }
+  }
 
   if (!quotation) {
     return (
@@ -274,7 +293,7 @@ function QuotationDetails() {
   </button>
 
   <button
-    onClick={() => generateQuotationPDF(quotation)}
+    onClick={downloadPdf}
     className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg"
   >
     📄 Download PDF

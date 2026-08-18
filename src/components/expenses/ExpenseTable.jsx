@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import Button from "../common/Button";
 import SearchBox from "../common/SearchBox";
 import EmptyState from "../common/EmptyState";
+import ConfirmDialog from "../common/ConfirmDialog";
 import { formatCurrency } from "../../utils/currency";
 
 function ExpenseTable({ setExpenseToEdit }) {
@@ -19,6 +20,7 @@ function ExpenseTable({ setExpenseToEdit }) {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
 
   const filteredExpenses = expenses.filter((expense) => {
     const project = projects.find(
@@ -39,19 +41,20 @@ function ExpenseTable({ setExpenseToEdit }) {
     return matchesSearch && (category === "All" || expense.category === category);
   });
 
-  function handleDelete(id) {
-    if (!window.confirm("Delete this expense?")) return;
-
-    deleteExpense(id);
+  function handleDelete() {
+    if (!expenseToDelete) return;
+    deleteExpense(expenseToDelete.id);
 
     showToast({
       type: "success",
       title: "Deleted",
       message: "Expense deleted successfully.",
     });
+    setExpenseToDelete(null);
   }
 
   return (
+    <>
     <div className="mt-10">
       <h2 className="text-2xl font-bold mb-4">
         Expenses
@@ -143,7 +146,7 @@ function ExpenseTable({ setExpenseToEdit }) {
                         <Button
                           variant="danger"
                           onClick={() =>
-                            handleDelete(expense.id)
+                            setExpenseToDelete(expense)
                           }
                         >
                           Delete
@@ -158,6 +161,15 @@ function ExpenseTable({ setExpenseToEdit }) {
         </div>
       )}
     </div>
+    <ConfirmDialog
+      isOpen={Boolean(expenseToDelete)}
+      title="Delete Expense?"
+      message="Are you sure you want to delete this expense? This action cannot be undone."
+      onCancel={() => setExpenseToDelete(null)}
+      onConfirm={handleDelete}
+      confirmLabel="Delete Expense"
+    />
+    </>
   );
 }
 

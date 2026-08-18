@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MainLayout from "../layouts/Mainlayout";
+import { useToast } from "../context/ToastContext";
 
 const defaultCompany = {
   companyName: "IbraMerd Electricals",
@@ -14,6 +15,7 @@ const defaultCompany = {
 };
 
 function CompanyProfile() {
+  const { showToast } = useToast();
   const [company, setCompany] = useState(defaultCompany);
 
   useEffect(() => {
@@ -37,7 +39,11 @@ function CompanyProfile() {
       JSON.stringify(company)
     );
 
-    alert("Company profile saved successfully.");
+    showToast({
+      type: "success",
+      title: "Company profile saved",
+      message: "Company profile saved successfully.",
+    });
   };
 
   return (

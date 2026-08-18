@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
+import { useToast } from "../../context/ToastContext";
 import { convertQuotationToInvoice } from "../../services/quotationToInvoice";
 import { generateQuotationPDF } from "../../services/pdf/quotationPdf";
 import { formatCurrency } from "../../utils/currency";
+import ConfirmDialog from "../common/ConfirmDialog";
 
 function QuotationHistory() {
   const {
@@ -11,8 +13,10 @@ function QuotationHistory() {
     setQuotations,
     setInvoices,
   } = useApp();
+  const { showToast } = useToast();
 
   const [search, setSearch] = useState("");
+  const [quotationToDelete, setQuotationToDelete] = useState(null);
 
   const filteredQuotations = quotations.filter((quotation) => {
     const text = search.toLowerCase();
@@ -24,17 +28,26 @@ function QuotationHistory() {
     );
   });
 
-  function deleteQuotation(id) {
-    if (!window.confirm("Delete this quotation?")) return;
-
+  function deleteQuotation() {
+    if (!quotationToDelete) return;
     setQuotations((prev) =>
-      prev.filter((quotation) => quotation.id !== id)
+      prev.filter((quotation) => quotation.id !== quotationToDelete.id)
     );
+    showToast({
+      type: "success",
+      title: "Quotation deleted",
+      message: "Quotation deleted successfully.",
+    });
+    setQuotationToDelete(null);
   }
 
   function convertQuotation(quotation) {
     if (quotation.status === "Converted") {
-      alert("This quotation has already been converted.");
+      showToast({
+        type: "info",
+        title: "Already converted",
+        message: "This quotation has already been converted.",
+      });
       return;
     }
 
@@ -53,7 +66,28 @@ function QuotationHistory() {
       )
     );
 
-    alert("Quotation converted successfully.");
+    showToast({
+      type: "success",
+      title: "Quotation converted",
+      message: "Quotation converted successfully.",
+    });
+  }
+
+  async function downloadQuotationPdf(quotation) {
+    try {
+      await generateQuotationPDF(quotation);
+      showToast({
+        type: "success",
+        title: "PDF generated",
+        message: "Quotation PDF downloaded successfully.",
+      });
+    } catch {
+      showToast({
+        type: "error",
+        title: "PDF generation failed",
+        message: "Unable to generate the quotation PDF.",
+      });
+    }
   }
 
   function getStatusBadge(status) {
@@ -96,6 +130,7 @@ function QuotationHistory() {
   }
 
   return (
+    <>
     <div className="mt-10">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-bold">
@@ -170,7 +205,7 @@ function QuotationHistory() {
 </Link>
 
                     <button
-  onClick={() => generateQuotationPDF(quotation)}
+  onClick={() => downloadQuotationPdf(quotation)}
   className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
 >
   PDF
@@ -190,7 +225,7 @@ function QuotationHistory() {
 
                     <button
                       onClick={() =>
-                        deleteQuotation(quotation.id)
+                        setQuotationToDelete(quotation)
                       }
                       className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
                     >
@@ -205,6 +240,15 @@ function QuotationHistory() {
         </div>
       )}
     </div>
+    <ConfirmDialog
+      isOpen={Boolean(quotationToDelete)}
+      title="Delete Quotation?"
+      message={`Are you sure you want to delete quotation ${quotationToDelete?.quotationNumber || ""}? This action cannot be undone.`}
+      onCancel={() => setQuotationToDelete(null)}
+      onConfirm={deleteQuotation}
+      confirmLabel="Delete Quotation"
+    />
+    </>
   );
 }
 

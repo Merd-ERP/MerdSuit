@@ -39,7 +39,11 @@ function InvoiceDetails() {
     const amount = Number(payment.amount);
 
     if (!amount || amount <= 0) {
-      alert("Enter a valid payment amount.");
+      showToast({
+        type: "error",
+        title: "Invalid payment amount",
+        message: "Enter a valid payment amount.",
+      });
       return;
     }
 

@@ -1,4 +1,5 @@
 import { useApp } from "../../context/AppContext";
+import { useToast } from "../../context/ToastContext";
 import { generateQuotationNumber } from "../../services/quotationService";
 
 function SaveQuotationButton({
@@ -11,15 +12,24 @@ function SaveQuotationButton({
   resetForm,
 }) {
   const { quotations, setQuotations } = useApp();
+  const { showToast } = useToast();
 
   function handleSave() {
     if (!quotation.client || !quotation.project) {
-      alert("Please select a client and project.");
+      showToast({
+        type: "warning",
+        title: "Client and project required",
+        message: "Please select a client and project.",
+      });
       return;
     }
 
     if (materials.length === 0) {
-      alert("Please add at least one material.");
+      showToast({
+        type: "warning",
+        title: "Materials required",
+        message: "Please add at least one material.",
+      });
       return;
     }
 
@@ -38,7 +48,11 @@ function SaveQuotationButton({
 
     setQuotations([...quotations, newQuotation]);
 
-    alert("✅ Quotation saved successfully!");
+    showToast({
+      type: "success",
+      title: "Quotation saved",
+      message: "Quotation saved successfully.",
+    });
 
     resetForm();
   }

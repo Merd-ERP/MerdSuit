@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useToast } from "../../context/ToastContext";
 import CompanyInfo from "./CompanyInfo";
 import ContactInfo from "./ContactInfo";
 import LogoUploader from "./LogoUploader";
@@ -28,6 +29,7 @@ const defaultCompany = {
 };
 
 function CompanySettingsForm() {
+  const { showToast } = useToast();
   const [company, setCompany] = useState(() => {
     const savedCompany = localStorage.getItem("company");
     return savedCompany
@@ -35,7 +37,6 @@ function CompanySettingsForm() {
       : defaultCompany;
   });
   const [errors, setErrors] = useState({});
-  const [saved, setSaved] = useState(false);
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -58,17 +59,15 @@ function CompanySettingsForm() {
 
     localStorage.setItem("company", JSON.stringify(company));
     window.dispatchEvent(new Event("company-settings-updated"));
-    setSaved(true);
+    showToast({
+      type: "success",
+      title: "Settings saved",
+      message: "Company settings saved successfully.",
+    });
   }
 
   return (
     <div className="space-y-6">
-      {saved && (
-        <div className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          Company settings saved successfully.
-        </div>
-      )}
-
       <CompanyInfo company={company} errors={errors} onChange={handleChange} />
       <ContactInfo company={company} errors={errors} onChange={handleChange} />
       <LogoUploader logo={company.logo} onLogoChange={handleLogoChange} />
