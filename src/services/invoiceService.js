@@ -1,3 +1,5 @@
+import { recalculateInvoicePaymentState } from "../utils/invoicePayments";
+
 const STORAGE_KEY = "invoices";
 
 export function getInvoices() {
@@ -7,7 +9,7 @@ export function getInvoices() {
 export function saveInvoice(invoice) {
   const invoices = getInvoices();
 
-  invoices.push(invoice);
+  invoices.push(recalculateInvoicePaymentState(invoice));
 
   localStorage.setItem(
     STORAGE_KEY,
@@ -16,9 +18,10 @@ export function saveInvoice(invoice) {
 }
 
 export function updateInvoice(updatedInvoice) {
+  const normalizedInvoice = recalculateInvoicePaymentState(updatedInvoice);
   const invoices = getInvoices().map((invoice) =>
     invoice.id === updatedInvoice.id
-      ? updatedInvoice
+      ? normalizedInvoice
       : invoice
   );
 

@@ -1,8 +1,10 @@
 import { useApp } from "../../context/AppContext";
 import StatCard from "./StatCard";
 import { formatCurrency } from "../../utils/currency";
-
-const asNumber = (value) => Number(value) || 0;
+import {
+  getInvoiceAmountPaid,
+  getInvoiceBalance,
+} from "../../utils/invoicePayments";
 
 function DashboardStats() {
   const { clients, projects, invoices } = useApp();
@@ -10,12 +12,13 @@ function DashboardStats() {
   const activeProjects = projects.filter(
     (project) => project.status !== "Completed"
   ).length;
-  const revenue = invoices
-    .filter((invoice) => invoice.status === "Paid")
-    .reduce((sum, invoice) => sum + asNumber(invoice.total), 0);
+  const revenue = invoices.reduce(
+    (sum, invoice) => sum + getInvoiceAmountPaid(invoice),
+    0,
+  );
   const outstanding = invoices.reduce(
     (sum, invoice) => {
-      const balance = asNumber(invoice.balance);
+      const balance = getInvoiceBalance(invoice);
       return balance > 0 ? sum + balance : sum;
     }, 0);
 

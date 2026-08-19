@@ -1,12 +1,13 @@
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
+import { getInvoiceBalance } from "../../utils/invoicePayments";
 
 function AlertsPanel() {
   const { inventory, invoices, projects } = useApp();
   const lowStockCount = inventory.filter(
     (item) => Number(item.quantity) <= Number(item.minimumStock)
   ).length;
-  const outstandingCount = invoices.filter((invoice) => Number(invoice.balance) > 0).length;
+  const outstandingCount = invoices.filter((invoice) => getInvoiceBalance(invoice) > 0).length;
   const nearingCompletionCount = projects.filter(
     (project) => project.status === "Nearing Completion"
   ).length;

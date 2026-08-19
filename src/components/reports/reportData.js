@@ -1,9 +1,139 @@
 import { getInvoices } from "../../services/invoiceService";
-import { getReceipts } from "../../services/receiptService";
 import { formatCurrency } from "../../utils/currency";
+import {
+  getInvoiceBalance,
+  getInvoicePaymentRows,
+  getInvoicePaymentStatus,
+} from "../../utils/invoicePayments";
 
-export const money = (value) => formatCurrency(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const money = (value) => formatCurrency(value, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const numeric = (value) => (Number(value) || 0).toFixed(2);
-export function inPeriod(date, period) { if (period === "All Time") return true; if (!date) return false; const value = new Date(`${date}T00:00:00`); if (Number.isNaN(value.getTime())) return false; const now = new Date(); const target = new Date(now.getFullYear(), now.getMonth() + (period === "Last Month" ? -1 : 0), 1); return value.getFullYear() === target.getFullYear() && value.getMonth() === target.getMonth(); }
-export function getReportMetrics(period, expenses = []) { const invoices = getInvoices().filter((invoice) => inPeriod(invoice.date, period)); const filteredExpenses = expenses.filter((expense) => inPeriod(expense.date, period)); const revenue = invoices.filter((invoice) => invoice.status === "Paid").reduce((sum, invoice) => sum + (Number(invoice.total) || 0), 0); const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0); const outstanding = invoices.reduce((sum, invoice) => { const balance = Number(invoice.balance) || 0; return balance > 0 ? sum + balance : sum; }, 0); return { revenue, totalExpenses, outstanding, profit: revenue - totalExpenses }; }
-export function getReportData(tab, period, { expenses = [], inventory = [] }) { const invoices = getInvoices().filter((invoice) => inPeriod(invoice.date, period)); if (tab === "sales") { const rawRows = invoices.filter((invoice) => invoice.status === "Paid").map((invoice) => [invoice.date || "", invoice.invoiceNumber || "", invoice.client || "", numeric(invoice.total), invoice.status || ""]); return { title: "Sales Report", headers: ["Date", "Invoice", "Customer", "Amount", "Status"], rawRows, rows: rawRows.map((row) => [...row.slice(0, 3), money(row[3]), row[4]]) }; } if (tab === "invoices") { const rawRows = invoices.map((invoice) => [invoice.invoiceNumber || "", invoice.client || "", invoice.dueDate || "", numeric(invoice.balance), invoice.status || ""]); return { title: "Invoice Report", headers: ["Invoice Number", "Customer", "Due Date", "Balance", "Status"], rawRows, rows: rawRows.map((row) => [...row.slice(0, 3), money(row[3]), row[4]]) }; } if (tab === "payments") { const rawRows = getReceipts().filter((receipt) => inPeriod(receipt.date, period)).map((receipt) => [receipt.date || "", receipt.receiptNumber || "", receipt.client || "", receipt.method || "", numeric(receipt.amount)]); return { title: "Payment Report", headers: ["Date", "Receipt", "Customer", "Method", "Amount"], rawRows, rows: rawRows.map((row) => [...row.slice(0, 4), money(row[4])]) }; } if (tab === "expenses") { const rawRows = expenses.filter((expense) => inPeriod(expense.date, period)).map((expense) => [expense.date || "", expense.category || "", expense.description || "", numeric(expense.amount)]); return { title: "Expense Report", headers: ["Date", "Category", "Description", "Amount"], rawRows, rows: rawRows.map((row) => [...row.slice(0, 3), money(row[3])]) }; } const rawRows = inventory.map((item) => { const quantity = Number(item.quantity) || 0; const unitCost = Number(item.costPrice) || 0; return [item.name || "", String(quantity), numeric(unitCost), numeric(quantity * unitCost)]; }); return { title: "Inventory Report", headers: ["Item", "Quantity", "Unit Cost", "Stock Value"], rawRows, rows: rawRows.map((row) => [row[0], row[1], money(row[2]), money(row[3])]) }; }
+
+export function inPeriod(date, period) {
+  if (period === "All Time") return true;
+  if (!date) return false;
+
+  const value = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(value.getTime())) return false;
+
+  const now = new Date();
+  const target = new Date(
+    now.getFullYear(),
+    now.getMonth() + (period === "Last Month" ? -1 : 0),
+    1,
+  );
+
+  return value.getFullYear() === target.getFullYear()
+    && value.getMonth() === target.getMonth();
+}
+
+const getPayments = (invoices) => invoices.flatMap(getInvoicePaymentRows);
+
+export function getReportMetrics(period, expenses = []) {
+  const allInvoices = getInvoices();
+  const periodInvoices = allInvoices.filter((invoice) => inPeriod(invoice.date, period));
+  const periodPayments = getPayments(allInvoices).filter((payment) => inPeriod(payment.date, period));
+  const filteredExpenses = expenses.filter((expense) => inPeriod(expense.date, period));
+
+  const revenue = periodPayments.reduce(
+    (sum, payment) => sum + (Number(payment.amount) || 0),
+    0,
+  );
+  const totalExpenses = filteredExpenses.reduce(
+    (sum, expense) => sum + (Number(expense.amount) || 0),
+    0,
+  );
+  const outstanding = periodInvoices.reduce(
+    (sum, invoice) => sum + getInvoiceBalance(invoice),
+    0,
+  );
+
+  return { revenue, totalExpenses, outstanding, profit: revenue - totalExpenses };
+}
+
+export function getReportData(tab, period, { expenses = [], inventory = [] }) {
+  const allInvoices = getInvoices();
+  const invoices = allInvoices.filter((invoice) => inPeriod(invoice.date, period));
+  const payments = getPayments(allInvoices).filter((payment) => inPeriod(payment.date, period));
+
+  if (tab === "sales") {
+    const rawRows = payments.map((payment) => [
+      payment.date || "",
+      payment.invoiceNumber,
+      payment.client,
+      numeric(payment.amount),
+      payment.invoiceStatus,
+    ]);
+    return {
+      title: "Sales Report",
+      headers: ["Date", "Invoice", "Customer", "Amount", "Status"],
+      rawRows,
+      rows: rawRows.map((row) => [...row.slice(0, 3), money(row[3]), row[4]]),
+    };
+  }
+
+  if (tab === "invoices") {
+    const rawRows = invoices.map((invoice) => [
+      invoice.invoiceNumber || "",
+      invoice.client || "",
+      invoice.dueDate || "",
+      numeric(getInvoiceBalance(invoice)),
+      getInvoicePaymentStatus(invoice),
+    ]);
+    return {
+      title: "Invoice Report",
+      headers: ["Invoice Number", "Customer", "Due Date", "Balance", "Status"],
+      rawRows,
+      rows: rawRows.map((row) => [...row.slice(0, 3), money(row[3]), row[4]]),
+    };
+  }
+
+  if (tab === "payments") {
+    const rawRows = payments.map((payment) => [
+      payment.date || "",
+      payment.invoiceNumber,
+      payment.client,
+      payment.method || "",
+      numeric(payment.amount),
+    ]);
+    return {
+      title: "Payment Report",
+      headers: ["Date", "Invoice", "Customer", "Method", "Amount"],
+      rawRows,
+      rows: rawRows.map((row) => [...row.slice(0, 4), money(row[4])]),
+    };
+  }
+
+  if (tab === "expenses") {
+    const rawRows = expenses
+      .filter((expense) => inPeriod(expense.date, period))
+      .map((expense) => [
+        expense.date || "",
+        expense.category || "",
+        expense.description || "",
+        numeric(expense.amount),
+      ]);
+    return {
+      title: "Expense Report",
+      headers: ["Date", "Category", "Description", "Amount"],
+      rawRows,
+      rows: rawRows.map((row) => [...row.slice(0, 3), money(row[3])]),
+    };
+  }
+
+  const rawRows = inventory.map((item) => {
+    const quantity = Number(item.quantity) || 0;
+    const unitCost = Number(item.costPrice) || 0;
+    return [item.name || "", String(quantity), numeric(unitCost), numeric(quantity * unitCost)];
+  });
+  return {
+    title: "Inventory Report",
+    headers: ["Item", "Quantity", "Unit Cost", "Stock Value"],
+    rawRows,
+    rows: rawRows.map((row) => [row[0], row[1], money(row[2]), money(row[3])]),
+  };
+}

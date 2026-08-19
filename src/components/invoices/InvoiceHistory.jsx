@@ -5,6 +5,7 @@ import {
   getInvoices,
 } from "../../services/invoiceService";
 import { formatCurrency } from "../../utils/currency";
+import { getInvoicePaymentStatus } from "../../utils/invoicePayments";
 
 function InvoiceHistory() {
   const invoices = getInvoices();
@@ -18,8 +19,8 @@ function InvoiceHistory() {
       invoice.project.toLowerCase().includes(search.toLowerCase()) ||
       invoice.invoiceNumber.toLowerCase().includes(search.toLowerCase());
 
-    const matchesFilter =
-      filter === "All" || invoice.status === filter;
+    const status = getInvoicePaymentStatus(invoice);
+    const matchesFilter = filter === "All" || status === filter;
 
     return matchesSearch && matchesFilter;
   });
@@ -84,7 +85,9 @@ function InvoiceHistory() {
 
           <tbody>
 
-            {filteredInvoices.map((invoice) => (
+            {filteredInvoices.map((invoice) => {
+              const status = getInvoicePaymentStatus(invoice);
+              return (
 
               <tr key={invoice.id}>
 
@@ -105,7 +108,7 @@ function InvoiceHistory() {
                 </td>
 
                 <td className="border p-2">
-                  {invoice.status}
+                  {status}
                 </td>
 
                 <td className="border p-2">
@@ -119,7 +122,7 @@ function InvoiceHistory() {
                       View
                     </Link>
 
-                    {invoice.status !== "Paid" ? (
+                    {status !== "Paid" ? (
 
                       <Link
                         to={`/invoice/${invoice.id}`}
@@ -142,7 +145,8 @@ function InvoiceHistory() {
 
               </tr>
 
-            ))}
+              );
+            })}
 
           </tbody>
 

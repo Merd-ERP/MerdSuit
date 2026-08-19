@@ -8,6 +8,7 @@ import {
 import { useMemo } from "react";
 import { useApp } from "../../context/AppContext";
 import { formatCurrency } from "../../utils/currency";
+import { getInvoiceAmountPaid } from "../../utils/invoicePayments";
 
 function FinancialReport() {
   const { quotations, invoices, expenses } = useApp();
@@ -21,7 +22,7 @@ function FinancialReport() {
 
   const invoiceTotal = useMemo(() => {
     return invoices.reduce(
-      (sum, invoice) => sum + Number(invoice.total || 0),
+      (sum, invoice) => sum + getInvoiceAmountPaid(invoice),
       0
     );
   }, [invoices]);
@@ -45,7 +46,7 @@ function FinancialReport() {
       valueColor: "text-purple-700",
     },
     {
-      title: "Invoice Revenue",
+      title: "Revenue Received",
       value: invoiceTotal,
       icon: DollarSign,
       bg: "bg-green-100",

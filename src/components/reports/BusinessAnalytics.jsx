@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useApp } from "../../context/AppContext";
+import { getInvoiceAmountPaid } from "../../utils/invoicePayments";
 
 import {
   ResponsiveContainer,
@@ -16,7 +17,7 @@ function BusinessAnalytics() {
 
   const chartData = useMemo(() => {
     const revenue = invoices.reduce(
-      (sum, invoice) => sum + Number(invoice.total || 0),
+      (sum, invoice) => sum + getInvoiceAmountPaid(invoice),
       0
     );
 

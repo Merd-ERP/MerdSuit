@@ -9,15 +9,29 @@ import {
 } from "../services/invoiceService";
 import { createPaymentReceipt } from "../services/paymentReceipt";
 import ConfirmDialog from "../components/common/ConfirmDialog";
+import Modal from "../components/common/Modal";
+import Button from "../components/common/Button";
 import { useToast } from "../context/ToastContext";
 import { formatCurrency } from "../utils/currency";
+import {
+  getInvoiceAmountPaid,
+  getInvoiceBalance,
+  getMaximumEditablePaymentAmount,
+  getInvoicePayments,
+  recalculateInvoicePaymentState,
+  roundCurrencyAmount,
+} from "../utils/invoicePayments";
+
+const createPaymentId = () => Date.now();
 
 function InvoiceDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { deductInventoryFromInvoice } = useApp();
+  const { deductInventoryFromInvoice, setInvoices } = useApp();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [paymentToDelete, setPaymentToDelete] = useState(null);
 
   const invoices = getInvoices();
 
@@ -25,23 +39,9 @@ function InvoiceDetails() {
     (inv) => inv.id.toString() === id
   );
 
-  const invoiceTotal = Math.max(0, Number(invoice?.total) || 0);
-  const paymentHistoryTotal = (invoice?.payments || []).reduce(
-    (sum, recordedPayment) => sum + (Number(recordedPayment.amount) || 0),
-    0,
-  );
-  const currentAmountPaid = Math.max(
-    0,
-    Math.round(
-      ((invoice?.payments || []).length > 0
-        ? paymentHistoryTotal
-        : Number(invoice?.amountPaid) || 0) * 100,
-    ) / 100,
-  );
-  const remainingBalance = Math.max(
-    0,
-    Math.round((invoiceTotal - currentAmountPaid) * 100) / 100,
-  );
+  const currentAmountPaid = getInvoiceAmountPaid(invoice);
+  const remainingBalance = getInvoiceBalance(invoice);
+  const invoicePayments = getInvoicePayments(invoice);
 
   const company =
     JSON.parse(localStorage.getItem("company")) || {};
@@ -56,7 +56,7 @@ function InvoiceDetails() {
   function savePayment() {
     const amount = Number(payment.amount);
 
-    if (!amount || amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       showToast({
         type: "error",
         title: "Invalid payment amount",
@@ -83,41 +83,24 @@ function InvoiceDetails() {
       return;
     }
 
-    const updatedInvoice = {
+    const updatedInvoice = recalculateInvoicePaymentState({
       ...invoice,
       payments: [
-        ...(invoice.payments || []),
+        ...invoicePayments,
         {
-          id: Date.now(),
+          id: createPaymentId(),
           amount,
           method: payment.method,
           reference: payment.reference,
           date: payment.date,
         },
       ],
-    };
-
-    updatedInvoice.amountPaid = Math.round(
-      updatedInvoice.payments.reduce(
-        (sum, pay) => sum + (Number(pay.amount) || 0),
-        0,
-      ) * 100,
-    ) / 100;
-
-    updatedInvoice.balance = Math.max(
-      0,
-      Math.round((invoiceTotal - updatedInvoice.amountPaid) * 100) / 100,
-    );
-
-    if (updatedInvoice.balance <= 0) {
-  updatedInvoice.status = "Paid";
-} else if (updatedInvoice.amountPaid > 0) {
-  updatedInvoice.status = "Partially Paid";
-} else {
-  updatedInvoice.status = "Unpaid";
-}
+    });
 
 updateInvoice(updatedInvoice);
+setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
+  currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
+));
 
 // Deduct stock ONLY once
 if (updatedInvoice.status === "Paid") {
@@ -132,7 +115,101 @@ createPaymentReceipt(updatedInvoice, {
   date: payment.date,
 });
 
-window.location.reload();
+setPayment({
+  amount: "",
+  method: "Cash",
+  reference: "",
+  date: new Date().toISOString().split("T")[0],
+});
+showToast({
+  type: "success",
+  title: "Payment recorded",
+  message: "Payment recorded successfully",
+});
+  }
+
+  function startEditingPayment(recordedPayment) {
+    setEditingPayment({
+      ...recordedPayment,
+      amount: String(recordedPayment.amount ?? ""),
+      method: recordedPayment.method || "Cash",
+      reference: recordedPayment.reference || "",
+      date: recordedPayment.date || new Date().toISOString().split("T")[0],
+    });
+  }
+
+  function saveEditedPayment() {
+    const amount = Number(editingPayment?.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showToast({
+        type: "error",
+        title: "Invalid payment amount",
+        message: "Enter a valid payment amount.",
+      });
+      return;
+    }
+
+    const maximumAmount = getMaximumEditablePaymentAmount(
+      invoice,
+      editingPayment.id,
+    );
+
+    if (roundCurrencyAmount(amount) > maximumAmount) {
+      showToast({
+        type: "error",
+        title: "Payment exceeds invoice total",
+        message: `The maximum amount allowed for this payment is ${formatCurrency(maximumAmount)}.`,
+      });
+      return;
+    }
+
+    const updatedInvoice = recalculateInvoicePaymentState({
+      ...invoice,
+      payments: invoicePayments.map((recordedPayment) =>
+        recordedPayment.id === editingPayment.id
+          ? {
+              ...recordedPayment,
+              amount: roundCurrencyAmount(amount),
+              method: editingPayment.method,
+              reference: editingPayment.reference,
+              date: editingPayment.date,
+            }
+          : recordedPayment
+      ),
+    });
+
+    updateInvoice(updatedInvoice);
+    setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
+      currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
+    ));
+    setEditingPayment(null);
+    showToast({
+      type: "success",
+      title: "Payment updated",
+      message: "Payment updated successfully",
+    });
+  }
+
+  function deletePayment() {
+    if (!paymentToDelete) return;
+
+    const updatedInvoice = recalculateInvoicePaymentState({
+      ...invoice,
+      payments: invoicePayments.filter(
+        (recordedPayment) => recordedPayment.id !== paymentToDelete.id
+      ),
+    });
+
+    updateInvoice(updatedInvoice);
+    setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
+      currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
+    ));
+    setPaymentToDelete(null);
+    showToast({
+      type: "success",
+      title: "Payment deleted",
+      message: "Payment deleted successfully",
+    });
   }
 
   function handleDelete() {
@@ -387,7 +464,7 @@ window.location.reload();
             <div className="flex justify-between font-semibold">
               <span>Total Paid</span>
               <span>
-                {formatCurrency(invoice.amountPaid)}
+                {formatCurrency(currentAmountPaid)}
               </span>
             </div>
 
@@ -500,7 +577,7 @@ window.location.reload();
             Payment History
           </h2>
 
-          {(invoice.payments || []).length === 0 ? (
+          {invoicePayments.length === 0 ? (
 
             <p className="text-gray-500">
               No payments recorded.
@@ -509,7 +586,7 @@ window.location.reload();
           ) : (
 
             <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full min-w-[620px] border-collapse text-sm">
+            <table className="w-full min-w-[760px] border-collapse text-sm">
 
               <thead className="bg-slate-100 text-left text-slate-600">
 
@@ -531,13 +608,17 @@ window.location.reload();
                     Amount
                   </th>
 
+                  <th className="border p-3 text-right">
+                    Actions
+                  </th>
+
                 </tr>
 
               </thead>
 
               <tbody>
 
-                {invoice.payments.map((pay) => (
+                {invoicePayments.map((pay) => (
 
                   <tr key={pay.id}>
 
@@ -555,6 +636,25 @@ window.location.reload();
 
                     <td className="border-b border-slate-100 p-3 text-right font-semibold text-emerald-700">
                       {formatCurrency(pay.amount)}
+                    </td>
+
+                    <td className="border-b border-slate-100 p-3">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          variant="secondary"
+                          className="min-h-9 px-3 py-1 text-sm"
+                          onClick={() => startEditingPayment(pay)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="danger"
+                          className="min-h-9 px-3 py-1 text-sm"
+                          onClick={() => setPaymentToDelete(pay)}
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </td>
 
                   </tr>
@@ -579,6 +679,88 @@ window.location.reload();
         onCancel={() => setIsDeleteOpen(false)}
         onConfirm={handleDelete}
         confirmLabel="Delete Invoice"
+      />
+
+      <Modal
+        isOpen={Boolean(editingPayment)}
+        title="Edit Payment"
+        onClose={() => setEditingPayment(null)}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditingPayment(null)}>
+              Cancel
+            </Button>
+            <Button onClick={saveEditedPayment}>Save Payment</Button>
+          </>
+        }
+      >
+        {editingPayment && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              Amount
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={editingPayment.amount}
+                onChange={(event) => setEditingPayment({
+                  ...editingPayment,
+                  amount: event.target.value,
+                })}
+                className="min-h-11 rounded-lg border border-slate-300 px-3"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700">
+              Payment Method
+              <select
+                value={editingPayment.method}
+                onChange={(event) => setEditingPayment({
+                  ...editingPayment,
+                  method: event.target.value,
+                })}
+                className="min-h-11 rounded-lg border border-slate-300 px-3"
+              >
+                <option>Cash</option>
+                <option>Bank Transfer</option>
+                <option>Mobile Money</option>
+                <option>Cheque</option>
+              </select>
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              Reference
+              <input
+                type="text"
+                value={editingPayment.reference}
+                onChange={(event) => setEditingPayment({
+                  ...editingPayment,
+                  reference: event.target.value,
+                })}
+                className="min-h-11 rounded-lg border border-slate-300 px-3"
+              />
+            </label>
+            <label className="grid gap-1 text-sm font-medium text-slate-700 sm:col-span-2">
+              Date
+              <input
+                type="date"
+                value={editingPayment.date}
+                onChange={(event) => setEditingPayment({
+                  ...editingPayment,
+                  date: event.target.value,
+                })}
+                className="min-h-11 rounded-lg border border-slate-300 px-3"
+              />
+            </label>
+          </div>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(paymentToDelete)}
+        title="Delete Payment?"
+        message={`Are you sure you want to delete this ${paymentToDelete ? formatCurrency(paymentToDelete.amount) : ""} payment? This action cannot be undone.`}
+        onCancel={() => setPaymentToDelete(null)}
+        onConfirm={deletePayment}
+        confirmLabel="Delete Payment"
       />
 
     </MainLayout>

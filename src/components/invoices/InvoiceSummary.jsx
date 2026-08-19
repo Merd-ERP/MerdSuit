@@ -1,5 +1,9 @@
 import { getInvoices } from "../../services/invoiceService";
 import { formatCurrency } from "../../utils/currency";
+import {
+  getInvoiceAmountPaid,
+  getInvoicePaymentStatus,
+} from "../../utils/invoicePayments";
 
 function InvoiceSummary() {
   const invoices = getInvoices();
@@ -7,15 +11,15 @@ function InvoiceSummary() {
   const totalInvoices = invoices.length;
 
   const paidInvoices = invoices.filter(
-    (invoice) => invoice.status === "Paid"
+    (invoice) => getInvoicePaymentStatus(invoice) === "Paid"
   );
 
   const unpaidInvoices = invoices.filter(
-    (invoice) => invoice.status === "Unpaid"
+    (invoice) => getInvoicePaymentStatus(invoice) !== "Paid"
   );
 
-  const totalRevenue = paidInvoices.reduce(
-    (sum, invoice) => sum + invoice.total,
+  const totalRevenue = invoices.reduce(
+    (sum, invoice) => sum + getInvoiceAmountPaid(invoice),
     0
   );
 
