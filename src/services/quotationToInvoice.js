@@ -4,12 +4,16 @@ import {
 } from "./invoiceService";
 
 export function convertQuotationToInvoice(quotation) {
+  if (quotation.status === "Draft" || !quotation.client) {
+    throw new Error("A draft quotation must be linked to a client and finalized before conversion.");
+  }
+
   const invoice = {
     id: Date.now(),
     invoiceNumber: generateInvoiceNumber(),
 
     client: quotation.client,
-    project: quotation.project,
+    project: quotation.project || "",
     date: new Date().toISOString().split("T")[0],
 
     materials: quotation.materials,

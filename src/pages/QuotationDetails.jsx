@@ -18,7 +18,21 @@ function QuotationDetails() {
   const company =
     JSON.parse(localStorage.getItem("company")) || {};
 
+  function canIssueQuotation() {
+    if (quotation?.status === "Draft" || !quotation?.client) {
+      showToast({
+        type: "warning",
+        title: "Finalize quotation first",
+        message: "Link a client and save this draft as a quotation before issuing it.",
+      });
+      return false;
+    }
+    return true;
+  }
+
   async function downloadPdf() {
+    if (!canIssueQuotation()) return;
+
     try {
       await generateQuotationPDF(quotation);
       showToast({
@@ -33,6 +47,11 @@ function QuotationDetails() {
         message: "Unable to generate the quotation PDF.",
       });
     }
+  }
+
+  function printQuotation() {
+    if (!canIssueQuotation()) return;
+    window.print();
   }
 
   if (!quotation) {
@@ -286,7 +305,7 @@ function QuotationDetails() {
   </button>
 
   <button
-    onClick={() => window.print()}
+    onClick={printQuotation}
     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
   >
     🖨 Print

@@ -18,7 +18,7 @@ function ClientReport() {
       );
 
       const clientQuotations = quotations.filter(
-        (quotation) => quotation.client === client.name
+        (quotation) => quotation.status !== "Draft" && quotation.client === client.name
       );
 
       const clientInvoices = invoices.filter(

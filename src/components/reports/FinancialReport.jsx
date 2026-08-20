@@ -14,7 +14,7 @@ function FinancialReport() {
   const { quotations, invoices, expenses } = useApp();
 
   const quotationTotal = useMemo(() => {
-    return quotations.reduce(
+    return quotations.filter((quotation) => quotation.status !== "Draft").reduce(
       (sum, quotation) => sum + Number(quotation.total || 0),
       0
     );

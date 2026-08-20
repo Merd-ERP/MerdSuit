@@ -7,7 +7,7 @@ import { generateQuotationPDF } from "../../services/pdf/quotationPdf";
 import { formatCurrency } from "../../utils/currency";
 import ConfirmDialog from "../common/ConfirmDialog";
 
-function QuotationHistory() {
+function QuotationHistory({ onEdit }) {
   const {
     quotations,
     setQuotations,
@@ -22,9 +22,9 @@ function QuotationHistory() {
     const text = search.toLowerCase();
 
     return (
-      quotation.client.toLowerCase().includes(text) ||
-      quotation.project.toLowerCase().includes(text) ||
-      quotation.quotationNumber.toLowerCase().includes(text)
+      (quotation.client || "").toLowerCase().includes(text) ||
+      (quotation.project || "").toLowerCase().includes(text) ||
+      (quotation.quotationNumber || "").toLowerCase().includes(text)
     );
   });
 
@@ -42,6 +42,15 @@ function QuotationHistory() {
   }
 
   function convertQuotation(quotation) {
+    if (quotation.status === "Draft" || !quotation.client) {
+      showToast({
+        type: "warning",
+        title: "Finalize quotation first",
+        message: "Link a client and save this draft as a quotation before converting it.",
+      });
+      return;
+    }
+
     if (quotation.status === "Converted") {
       showToast({
         type: "info",
@@ -74,6 +83,15 @@ function QuotationHistory() {
   }
 
   async function downloadQuotationPdf(quotation) {
+    if (quotation.status === "Draft" || !quotation.client) {
+      showToast({
+        type: "warning",
+        title: "Finalize quotation first",
+        message: "Link a client and save this draft as a quotation before generating a PDF.",
+      });
+      return;
+    }
+
     try {
       await generateQuotationPDF(quotation);
       showToast({
@@ -92,6 +110,13 @@ function QuotationHistory() {
 
   function getStatusBadge(status) {
     switch (status) {
+      case "Draft":
+        return (
+          <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-semibold">
+            Draft
+          </span>
+        );
+
       case "Accepted":
         return (
           <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
@@ -176,7 +201,7 @@ function QuotationHistory() {
                 </td>
 
                 <td className="border p-3">
-                  {quotation.client}
+                  {quotation.client || "Not linked"}
                 </td>
 
                 <td className="border p-3">
@@ -204,6 +229,15 @@ function QuotationHistory() {
   View
 </Link>
 
+                    {quotation.status === "Draft" && (
+                      <button
+                        onClick={() => onEdit(quotation)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                      >
+                        Edit
+                      </button>
+                    )}
+
                     <button
   onClick={() => downloadQuotationPdf(quotation)}
   className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
@@ -213,9 +247,9 @@ function QuotationHistory() {
 
                     <button
                       onClick={() => convertQuotation(quotation)}
-                      disabled={quotation.status === "Converted"}
+                      disabled={quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client}
                       className={`px-3 py-1 rounded text-white ${
-                        quotation.status === "Converted"
+                        quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client
                           ? "bg-gray-400 cursor-not-allowed"
                           : "bg-green-600 hover:bg-green-700"
                       }`}
