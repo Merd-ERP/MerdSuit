@@ -12,8 +12,12 @@ export function createPaymentReceipt(invoice, payment) {
     invoiceNumber: invoice.invoiceNumber,
     paymentId: payment.id,
 
-    client: invoice.client,
-    project: invoice.project,
+    clientId: invoice.clientId ?? "",
+    client: invoice.clientNameSnapshot || invoice.client,
+    clientNameSnapshot: invoice.clientNameSnapshot || invoice.client,
+    projectId: invoice.projectId ?? "",
+    project: invoice.projectNameSnapshot || invoice.project || "",
+    projectNameSnapshot: invoice.projectNameSnapshot || invoice.project || "",
 
     date: payment.date,
     method: payment.method,

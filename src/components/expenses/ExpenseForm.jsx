@@ -1,7 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { useApp } from "../../context/AppContext";
 import { useToast } from "../../context/ToastContext";
+import {
+  findByRelationshipOptionValue,
+  isArchivedRecord,
+  relationshipIdsEqual,
+  relationshipOptionValue,
+  resolveProject,
+} from "../../utils/relationships";
 
 import Button from "../common/Button";
 
@@ -27,23 +34,16 @@ function ExpenseForm({
     notes: "",
   };
 
-  const [editingId, setEditingId] = useState(null);
-  const [expense, setExpense] = useState(emptyExpense);
-
-  useEffect(() => {
-    if (!expenseToEdit) return;
-
-    setEditingId(expenseToEdit.id);
-    setExpense(expenseToEdit);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
-  }, [expenseToEdit]);
+  const editingId = expenseToEdit?.id;
+  const isEditing = editingId !== undefined && editingId !== null;
+  const [expense, setExpense] = useState(() => expenseToEdit || emptyExpense);
+  const selectedProject = resolveProject(expense, projects);
+  const availableProjects = projects.filter(
+    (project) => !isArchivedRecord(project)
+      || relationshipIdsEqual(project.id, selectedProject?.id)
+  );
 
   function resetForm() {
-    setEditingId(null);
     setExpenseToEdit(null);
     setExpense(emptyExpense);
   }
@@ -70,12 +70,12 @@ function ExpenseForm({
     }
 
     const newExpense = {
-      id: editingId || Date.now(),
+      id: editingId ?? Date.now(),
       ...expense,
       amount: Number(expense.amount),
     };
 
-    if (editingId) {
+    if (isEditing) {
       updateExpense(newExpense);
 
       showToast({
@@ -99,7 +99,7 @@ function ExpenseForm({
   return (
     <div className="bg-white rounded-xl shadow p-6">
       <h2 className="text-2xl font-bold mb-6">
-        {editingId ? "Edit Expense" : "Add Expense"}
+        {isEditing ? "Edit Expense" : "Add Expense"}
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -180,22 +180,20 @@ function ExpenseForm({
 
         <select
           className="border rounded-lg p-2"
-          value={expense.projectId}
-          onChange={(e) =>
-            setExpense({
-              ...expense,
-              projectId: e.target.value,
-            })
-          }
+          value={relationshipOptionValue(selectedProject?.id)}
+          onChange={(e) => {
+            const project = findByRelationshipOptionValue(projects, e.target.value);
+            setExpense({ ...expense, projectId: project?.id ?? "" });
+          }}
         >
           <option value="">
             No Project
           </option>
 
-          {projects.map((project) => (
+          {availableProjects.map((project) => (
             <option
-              key={project.id}
-              value={project.id}
+              key={relationshipOptionValue(project.id)}
+              value={relationshipOptionValue(project.id)}
             >
               {project.name}
             </option>
@@ -218,15 +216,15 @@ function ExpenseForm({
 
       <div className="flex gap-3 mt-6">
         <Button
-          variant={editingId ? "warning" : "primary"}
+          variant={isEditing ? "warning" : "primary"}
           onClick={handleSave}
         >
-          {editingId
+          {isEditing
             ? "Update Expense"
             : "Save Expense"}
         </Button>
 
-        {editingId && (
+        {isEditing && (
           <Button
             variant="secondary"
             onClick={resetForm}

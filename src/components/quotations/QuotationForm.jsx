@@ -1,88 +1,87 @@
-function QuotationForm({
-  quotation,
-  setQuotation,
-  clients,
-  projects,
-}) {
-  const selectedClientId = quotation.clientId
-    || clients.find((client) => client.name === quotation.client)?.id
-    || "";
+import {
+  isArchivedRecord,
+  findByRelationshipOptionValue,
+  relationshipIdsEqual,
+  relationshipOptionValue,
+  resolveClient,
+  resolveProject,
+} from "../../utils/relationships";
 
-  function changeClient(clientId) {
-    const client = clients.find((item) => String(item.id) === clientId);
-    const selectedProject = projects.find((project) => project.name === quotation.project);
-    const projectMatchesClient = !selectedProject
-      || String(selectedProject.clientId || "") === clientId
-      || selectedProject.client === client?.name;
+function QuotationForm({ quotation, setQuotation, clients, projects }) {
+  const selectedClient = resolveClient(quotation, clients);
+  const selectedProject = resolveProject(quotation, projects);
+  const selectedClientId = relationshipOptionValue(selectedClient?.id);
+  const selectedProjectId = relationshipOptionValue(selectedProject?.id);
+
+  const availableClients = clients.filter(
+    (client) => !isArchivedRecord(client) || relationshipIdsEqual(client.id, selectedClient?.id)
+  );
+  const availableProjects = projects.filter((project) => {
+    if (isArchivedRecord(project) && !relationshipIdsEqual(project.id, selectedProject?.id)) {
+      return false;
+    }
+    if (!selectedClient) return true;
+
+    const projectClient = resolveClient(project, clients);
+    return projectClient
+      ? relationshipIdsEqual(projectClient.id, selectedClient.id)
+      : false;
+  });
+
+  function changeClient(clientOptionValue) {
+    const client = findByRelationshipOptionValue(clients, clientOptionValue);
+    const projectClient = selectedProject ? resolveClient(selectedProject, clients) : null;
+    const keepProject = !selectedProject
+      || (client && projectClient && relationshipIdsEqual(client.id, projectClient.id));
 
     setQuotation({
       ...quotation,
-      clientId: client?.id || "",
+      clientId: client?.id ?? "",
       client: client?.name || "",
-      project: projectMatchesClient ? quotation.project : "",
+      clientNameSnapshot: client?.name || "",
+      projectId: keepProject ? selectedProject?.id ?? "" : "",
+      project: keepProject ? selectedProject?.name || "" : "",
+      projectNameSnapshot: keepProject ? selectedProject?.name || "" : "",
     });
   }
 
-  function changeProject(projectName) {
-    const selectedProject = projects.find((project) => project.name === projectName);
-    if (!selectedProject) {
-      setQuotation({ ...quotation, project: "" });
+  function changeProject(projectOptionValue) {
+    const project = findByRelationshipOptionValue(projects, projectOptionValue);
+    if (!project) {
+      setQuotation({
+        ...quotation,
+        projectId: "",
+        project: "",
+        projectNameSnapshot: "",
+      });
       return;
     }
 
-    const projectClient = clients.find((client) =>
-      String(client.id) === String(selectedProject.clientId)
-      || client.name === selectedProject.client
-    );
-
+    const projectClient = resolveClient(project, clients);
     setQuotation({
       ...quotation,
-      project: selectedProject.name,
-      clientId: projectClient?.id || selectedProject.clientId || quotation.clientId || "",
-      client: projectClient?.name || selectedProject.client || quotation.client,
+      projectId: project.id,
+      project: project.name,
+      projectNameSnapshot: project.name,
+      clientId: projectClient?.id ?? quotation.clientId ?? "",
+      client: projectClient?.name || quotation.clientNameSnapshot || quotation.client || "",
+      clientNameSnapshot: projectClient?.name || quotation.clientNameSnapshot || quotation.client || "",
     });
   }
 
-  const availableProjects = selectedClientId || quotation.client
-    ? projects.filter((project) =>
-        String(project.clientId || "") === String(selectedClientId)
-        || project.client === quotation.client
-      )
-    : projects;
-
   return (
     <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <select
-        value={selectedClientId}
-        onChange={(event) => changeClient(event.target.value)}
-        className="rounded-lg border p-2"
-      >
+      <select value={selectedClientId} onChange={(event) => changeClient(event.target.value)} className="rounded-lg border p-2">
         <option value="">Select Client</option>
-        {clients.map((client) => (
-          <option key={client.id} value={client.id}>{client.name}</option>
-        ))}
+        {availableClients.map((client) => <option key={relationshipOptionValue(client.id)} value={relationshipOptionValue(client.id)}>{client.name}</option>)}
       </select>
 
-      <select
-        value={quotation.project}
-        onChange={(event) => changeProject(event.target.value)}
-        className="rounded-lg border p-2"
-      >
+      <select value={selectedProjectId} onChange={(event) => changeProject(event.target.value)} className="rounded-lg border p-2">
         <option value="">No Project</option>
-        {availableProjects.map((project) => (
-          <option key={project.id} value={project.name}>{project.name}</option>
-        ))}
+        {availableProjects.map((project) => <option key={relationshipOptionValue(project.id)} value={relationshipOptionValue(project.id)}>{project.name}</option>)}
       </select>
 
-      <input
-        type="date"
-        value={quotation.date}
-        onChange={(event) => setQuotation({
-          ...quotation,
-          date: event.target.value,
-        })}
-        className="rounded-lg border p-2"
-      />
+      <input type="date" value={quotation.date} onChange={(event) => setQuotation({ ...quotation, date: event.target.value })} className="rounded-lg border p-2" />
     </div>
   );
 }

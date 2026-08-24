@@ -8,6 +8,7 @@ import SearchBox from "../common/SearchBox";
 import EmptyState from "../common/EmptyState";
 import ConfirmDialog from "../common/ConfirmDialog";
 import { formatCurrency } from "../../utils/currency";
+import { resolveProject } from "../../utils/relationships";
 
 function ExpenseTable({ setExpenseToEdit }) {
   const {
@@ -23,9 +24,7 @@ function ExpenseTable({ setExpenseToEdit }) {
   const [expenseToDelete, setExpenseToDelete] = useState(null);
 
   const filteredExpenses = expenses.filter((expense) => {
-    const project = projects.find(
-      (p) => String(p.id) === String(expense.projectId)
-    );
+    const project = resolveProject(expense, projects);
 
     const projectName = project?.name || "";
 
@@ -100,11 +99,7 @@ function ExpenseTable({ setExpenseToEdit }) {
 
             <tbody>
               {filteredExpenses.map((expense) => {
-                const project = projects.find(
-                  (p) =>
-                    String(p.id) ===
-                    String(expense.projectId)
-                );
+                const project = resolveProject(expense, projects);
 
                 return (
                   <tr key={expense.id}>
@@ -136,9 +131,10 @@ function ExpenseTable({ setExpenseToEdit }) {
                       <div className="flex gap-2 flex-wrap">
                         <Button
                           variant="warning"
-                          onClick={() =>
-                            setExpenseToEdit(expense)
-                          }
+                          onClick={() => {
+                            setExpenseToEdit(expense);
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
                         >
                           Edit
                         </Button>

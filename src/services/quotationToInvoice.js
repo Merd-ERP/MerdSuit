@@ -33,8 +33,12 @@ export function convertQuotationToInvoice(quotation) {
     id: Date.now(),
     invoiceNumber: generateInvoiceNumber(),
 
-    client: quotation.client,
-    project: quotation.project || "",
+    clientId: quotation.clientId ?? "",
+    client: quotation.clientNameSnapshot || quotation.client,
+    clientNameSnapshot: quotation.clientNameSnapshot || quotation.client,
+    projectId: quotation.projectId ?? "",
+    project: quotation.projectNameSnapshot || quotation.project || "",
+    projectNameSnapshot: quotation.projectNameSnapshot || quotation.project || "",
     date: new Date().toISOString().split("T")[0],
 
     materials: quotation.materials,

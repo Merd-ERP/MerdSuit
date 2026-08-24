@@ -3,6 +3,7 @@ import { useToast } from "../../context/ToastContext";
 import { generateQuotationNumber } from "../../services/quotationService";
 import Button from "../common/Button";
 import { hasMeaningfulQuotationItems } from "../../utils/quotationItems";
+import { relationshipIdsEqual, resolveClient, resolveProject } from "../../utils/relationships";
 
 function SaveQuotationButton({
   quotation,
@@ -15,11 +16,13 @@ function SaveQuotationButton({
   editingQuotation,
   asDraft = false,
 }) {
-  const { setQuotations } = useApp();
+  const { clients, projects, setQuotations } = useApp();
   const { showToast } = useToast();
 
   function handleSave() {
     const hasValidItems = hasMeaningfulQuotationItems(materials);
+    const currentClient = resolveClient(quotation, clients);
+    const currentProject = resolveProject(quotation, projects);
 
     if (asDraft && !hasValidItems) {
       showToast({
@@ -30,7 +33,7 @@ function SaveQuotationButton({
       return;
     }
 
-    if (!asDraft && !quotation.client) {
+    if (!asDraft && !currentClient) {
       showToast({
         type: "warning",
         title: "Client required",
@@ -50,9 +53,15 @@ function SaveQuotationButton({
 
     const savedQuotation = {
       ...(editingQuotation || {}),
-      id: editingQuotation?.id || Date.now(),
+      id: editingQuotation?.id ?? Date.now(),
       quotationNumber: editingQuotation?.quotationNumber || generateQuotationNumber(),
       ...quotation,
+      clientId: currentClient?.id ?? "",
+      client: currentClient?.name || quotation.clientNameSnapshot || quotation.client || "",
+      clientNameSnapshot: currentClient?.name || quotation.clientNameSnapshot || quotation.client || "",
+      projectId: currentProject?.id ?? "",
+      project: currentProject?.name || quotation.projectNameSnapshot || quotation.project || "",
+      projectNameSnapshot: currentProject?.name || quotation.projectNameSnapshot || quotation.project || "",
       materials,
       labour: Number(labour || 0),
       transport: Number(transport || 0),
@@ -65,7 +74,7 @@ function SaveQuotationButton({
 
     setQuotations((currentQuotations) => editingQuotation
       ? currentQuotations.map((item) =>
-          item.id === editingQuotation.id ? savedQuotation : item
+          relationshipIdsEqual(item.id, editingQuotation.id) ? savedQuotation : item
         )
       : [...currentQuotations, savedQuotation]
     );

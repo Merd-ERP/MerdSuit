@@ -5,11 +5,17 @@ import { useToast } from "../../context/ToastContext";
 import { convertQuotationToInvoice } from "../../services/quotationToInvoice";
 import { generateQuotationPDF } from "../../services/pdf/quotationPdf";
 import { formatCurrency } from "../../utils/currency";
+import {
+  getClientDisplayName,
+  getProjectDisplayName,
+} from "../../utils/relationships";
 import ConfirmDialog from "../common/ConfirmDialog";
 
 function QuotationHistory({ onEdit }) {
   const {
     quotations,
+    clients,
+    projects,
     setQuotations,
     setInvoices,
   } = useApp();
@@ -22,10 +28,13 @@ function QuotationHistory({ onEdit }) {
 
   const filteredQuotations = quotations.filter((quotation) => {
     const text = search.toLowerCase();
+    const useCurrentNames = quotation.status === "Draft";
+    const clientName = getClientDisplayName(quotation, clients, { current: useCurrentNames });
+    const projectName = getProjectDisplayName(quotation, projects, { current: useCurrentNames });
 
     return (
-      (quotation.client || "").toLowerCase().includes(text) ||
-      (quotation.project || "").toLowerCase().includes(text) ||
+      clientName.toLowerCase().includes(text) ||
+      projectName.toLowerCase().includes(text) ||
       (quotation.quotationNumber || "").toLowerCase().includes(text)
     );
   });
@@ -210,7 +219,11 @@ function QuotationHistory({ onEdit }) {
           </thead>
 
           <tbody>
-            {filteredQuotations.map((quotation) => (
+            {filteredQuotations.map((quotation) => {
+              const useCurrentNames = quotation.status === "Draft";
+              const clientName = getClientDisplayName(quotation, clients, { current: useCurrentNames });
+              const projectName = getProjectDisplayName(quotation, projects, { current: useCurrentNames });
+              return (
               <tr
                 key={quotation.id}
                 className="hover:bg-gray-50"
@@ -220,11 +233,11 @@ function QuotationHistory({ onEdit }) {
                 </td>
 
                 <td className="border p-3">
-                  {quotation.client || "Not linked"}
+                  {clientName || "Not linked"}
                 </td>
 
                 <td className="border p-3">
-                  {quotation.project}
+                  {projectName || "—"}
                 </td>
 
                 <td className="border p-3">
@@ -287,7 +300,8 @@ function QuotationHistory({ onEdit }) {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         </div>

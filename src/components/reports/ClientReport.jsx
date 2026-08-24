@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { formatCurrency } from "../../utils/currency";
+import { recordMatchesClient, relationshipOptionValue } from "../../utils/relationships";
 
 function ClientReport() {
   const {
@@ -14,15 +15,15 @@ function ClientReport() {
   const clientStats = useMemo(() => {
     return clients.map((client) => {
       const clientProjects = projects.filter(
-        (project) => project.client === client.name
+        (project) => recordMatchesClient(project, client, clients)
       );
 
       const clientQuotations = quotations.filter(
-        (quotation) => quotation.status !== "Draft" && quotation.client === client.name
+        (quotation) => quotation.status !== "Draft" && recordMatchesClient(quotation, client, clients)
       );
 
       const clientInvoices = invoices.filter(
-        (invoice) => invoice.client === client.name
+        (invoice) => recordMatchesClient(invoice, client, clients)
       );
 
       const quotationValue = clientQuotations.reduce(
@@ -38,6 +39,7 @@ function ClientReport() {
       );
 
       return {
+        id: client.id,
         name: client.name,
         projects: clientProjects.length,
         quotations: clientQuotations.length,
@@ -103,7 +105,7 @@ function ClientReport() {
 
             {clientStats.map((client) => (
               <tr
-                key={client.name}
+                key={relationshipOptionValue(client.id)}
                 className="border-b hover:bg-slate-50"
               >
                 <td className="p-4 font-medium">
