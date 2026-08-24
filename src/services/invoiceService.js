@@ -40,6 +40,8 @@ export function deleteInvoice(id) {
     STORAGE_KEY,
     JSON.stringify(invoices)
   );
+
+  return invoices;
 }
 
 export function generateInvoiceNumber() {

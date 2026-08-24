@@ -7,7 +7,9 @@ export const roundCurrencyAmount = (value) =>
   Math.round((toAmount(value) + Number.EPSILON) * 100) / 100;
 
 export function getInvoicePayments(invoice = {}) {
-  if (Array.isArray(invoice.payments)) {
+  const hasModernPaymentHistory = Number(invoice.paymentHistoryVersion) >= 1;
+
+  if (Array.isArray(invoice.payments) && (invoice.payments.length > 0 || hasModernPaymentHistory)) {
     return invoice.payments;
   }
 

@@ -62,3 +62,51 @@ export function generateReceiptNumber() {
     "0"
   )}`;
 }
+
+export function updateReceiptForPayment(invoiceId, payment) {
+  if (payment?.id === undefined || payment?.id === null) return false;
+
+  let updated = false;
+  const receipts = getReceipts().map((receipt) => {
+    const isMatchingReceipt = receipt.paymentId !== undefined
+      && receipt.paymentId !== null
+      && String(receipt.paymentId) === String(payment.id)
+      && String(receipt.invoiceId) === String(invoiceId);
+
+    if (!isMatchingReceipt) return receipt;
+
+    updated = true;
+    return {
+      ...receipt,
+      amount: payment.amount,
+      method: payment.method,
+      reference: payment.reference,
+      date: payment.date,
+    };
+  });
+
+  if (updated) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(receipts));
+  }
+
+  return updated;
+}
+
+export function deleteReceiptForPayment(invoiceId, paymentId) {
+  if (paymentId === undefined || paymentId === null) return false;
+
+  const receipts = getReceipts();
+  const remainingReceipts = receipts.filter((receipt) => {
+    const isMatchingReceipt = receipt.paymentId !== undefined
+      && receipt.paymentId !== null
+      && String(receipt.paymentId) === String(paymentId)
+      && String(receipt.invoiceId) === String(invoiceId);
+
+    return !isMatchingReceipt;
+  });
+
+  if (remainingReceipts.length === receipts.length) return false;
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(remainingReceipts));
+  return true;
+}

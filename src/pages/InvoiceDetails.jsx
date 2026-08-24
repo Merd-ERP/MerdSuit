@@ -8,6 +8,10 @@ import {
   deleteInvoice,
 } from "../services/invoiceService";
 import { createPaymentReceipt } from "../services/paymentReceipt";
+import {
+  deleteReceiptForPayment,
+  updateReceiptForPayment,
+} from "../services/receiptService";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import Modal from "../components/common/Modal";
 import Button from "../components/common/Button";
@@ -83,17 +87,20 @@ function InvoiceDetails() {
       return;
     }
 
+    const newPayment = {
+      id: createPaymentId(),
+      amount,
+      method: payment.method,
+      reference: payment.reference,
+      date: payment.date,
+    };
+
     const updatedInvoice = recalculateInvoicePaymentState({
       ...invoice,
+      paymentHistoryVersion: 1,
       payments: [
         ...invoicePayments,
-        {
-          id: createPaymentId(),
-          amount,
-          method: payment.method,
-          reference: payment.reference,
-          date: payment.date,
-        },
+        newPayment,
       ],
     });
 
@@ -108,12 +115,7 @@ if (updatedInvoice.status === "Paid") {
 }
 
 // Create receipt
-createPaymentReceipt(updatedInvoice, {
-  amount,
-  method: payment.method,
-  reference: payment.reference,
-  date: payment.date,
-});
+createPaymentReceipt(updatedInvoice, newPayment);
 
 setPayment({
   amount: "",
@@ -165,6 +167,7 @@ showToast({
 
     const updatedInvoice = recalculateInvoicePaymentState({
       ...invoice,
+      paymentHistoryVersion: 1,
       payments: invoicePayments.map((recordedPayment) =>
         recordedPayment.id === editingPayment.id
           ? {
@@ -179,6 +182,10 @@ showToast({
     });
 
     updateInvoice(updatedInvoice);
+    const savedPayment = updatedInvoice.payments.find(
+      (recordedPayment) => recordedPayment.id === editingPayment.id
+    );
+    updateReceiptForPayment(updatedInvoice.id, savedPayment);
     setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
       currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
     ));
@@ -195,12 +202,14 @@ showToast({
 
     const updatedInvoice = recalculateInvoicePaymentState({
       ...invoice,
+      paymentHistoryVersion: 1,
       payments: invoicePayments.filter(
         (recordedPayment) => recordedPayment.id !== paymentToDelete.id
       ),
     });
 
     updateInvoice(updatedInvoice);
+    deleteReceiptForPayment(updatedInvoice.id, paymentToDelete.id);
     setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
       currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
     ));
@@ -213,7 +222,8 @@ showToast({
   }
 
   function handleDelete() {
-    deleteInvoice(invoice.id);
+    const remainingInvoices = deleteInvoice(invoice.id);
+    setInvoices(remainingInvoices);
     showToast({
       type: "success",
       title: "Invoice deleted",

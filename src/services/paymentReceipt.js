@@ -10,6 +10,7 @@ export function createPaymentReceipt(invoice, payment) {
 
     invoiceId: invoice.id,
     invoiceNumber: invoice.invoiceNumber,
+    paymentId: payment.id,
 
     client: invoice.client,
     project: invoice.project,

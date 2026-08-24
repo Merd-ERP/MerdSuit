@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { useToast } from "../../context/ToastContext";
@@ -17,6 +17,8 @@ function QuotationHistory({ onEdit }) {
 
   const [search, setSearch] = useState("");
   const [quotationToDelete, setQuotationToDelete] = useState(null);
+  const [convertingQuotationId, setConvertingQuotationId] = useState(null);
+  const conversionsInProgress = useRef(new Set());
 
   const filteredQuotations = quotations.filter((quotation) => {
     const text = search.toLowerCase();
@@ -51,35 +53,52 @@ function QuotationHistory({ onEdit }) {
       return;
     }
 
-    if (quotation.status === "Converted") {
-      showToast({
+    const quotationKey = String(quotation.id ?? quotation.quotationNumber);
+    if (conversionsInProgress.current.has(quotationKey)) {
+      return;
+    }
+
+    conversionsInProgress.current.add(quotationKey);
+    setConvertingQuotationId(quotationKey);
+
+    try {
+      const { invoice, created } = convertQuotationToInvoice(quotation);
+
+      setInvoices((prev) => prev.some((item) => item.id === invoice.id)
+        ? prev
+        : [...prev, invoice]
+      );
+
+      setQuotations((prev) =>
+        prev.map((item) =>
+          item.id === quotation.id
+            ? {
+                ...item,
+                status: "Converted",
+              }
+            : item
+        )
+      );
+
+      showToast(created ? {
+        type: "success",
+        title: "Quotation converted",
+        message: "Quotation converted successfully.",
+      } : {
         type: "info",
         title: "Already converted",
         message: "This quotation has already been converted.",
       });
-      return;
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Conversion failed",
+        message: error.message || "Unable to convert this quotation.",
+      });
+    } finally {
+      conversionsInProgress.current.delete(quotationKey);
+      setConvertingQuotationId(null);
     }
-
-    const invoice = convertQuotationToInvoice(quotation);
-
-    setInvoices((prev) => [...prev, invoice]);
-
-    setQuotations((prev) =>
-      prev.map((item) =>
-        item.id === quotation.id
-          ? {
-              ...item,
-              status: "Converted",
-            }
-          : item
-      )
-    );
-
-    showToast({
-      type: "success",
-      title: "Quotation converted",
-      message: "Quotation converted successfully.",
-    });
   }
 
   async function downloadQuotationPdf(quotation) {
@@ -247,14 +266,14 @@ function QuotationHistory({ onEdit }) {
 
                     <button
                       onClick={() => convertQuotation(quotation)}
-                      disabled={quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client}
+                      disabled={quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client || convertingQuotationId === String(quotation.id ?? quotation.quotationNumber)}
                       className={`px-3 py-1 rounded text-white ${
-                        quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client
+                        quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client || convertingQuotationId === String(quotation.id ?? quotation.quotationNumber)
                           ? "bg-gray-400 cursor-not-allowed"
                           : "bg-green-600 hover:bg-green-700"
                       }`}
                     >
-                      Convert
+                      {convertingQuotationId === String(quotation.id ?? quotation.quotationNumber) ? "Converting..." : "Convert"}
                     </button>
 
                     <button
