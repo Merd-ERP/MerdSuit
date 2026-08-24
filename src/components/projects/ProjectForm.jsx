@@ -4,6 +4,8 @@ import { useToast } from "../../context/ToastContext";
 import {
   isArchivedRecord,
   findByRelationshipOptionValue,
+  getClientOptionLabel,
+  getUpdatedNameAliases,
   relationshipIdsEqual,
   relationshipOptionValue,
   resolveClient,
@@ -64,6 +66,9 @@ function ProjectForm({ projectToEdit, setProjectToEdit }) {
     const record = {
       ...project,
       id: editingId ?? Date.now(),
+      nameAliases: editingId !== undefined && editingId !== null
+        ? getUpdatedNameAliases(projectToEdit, project.name)
+        : project.nameAliases,
       clientId: currentClient?.id ?? project.clientId ?? "",
       client: currentClient?.name || project.clientNameSnapshot || project.client || "",
       clientNameSnapshot: currentClient?.name || project.clientNameSnapshot || project.client || "",
@@ -86,7 +91,7 @@ function ProjectForm({ projectToEdit, setProjectToEdit }) {
         <input placeholder="Project Name" value={project.name} onChange={(event) => setProject({ ...project, name: event.target.value })} className="rounded-lg border p-3" />
         <select value={selectedClientId} onChange={(event) => changeClient(event.target.value)} className="rounded-lg border p-3">
           <option value="">Select Client</option>
-          {availableClients.map((client) => <option key={relationshipOptionValue(client.id)} value={relationshipOptionValue(client.id)}>{client.name}</option>)}
+          {availableClients.map((client) => <option key={relationshipOptionValue(client.id)} value={relationshipOptionValue(client.id)}>{getClientOptionLabel(client)}</option>)}
         </select>
         <input placeholder="Location" value={project.location} onChange={(event) => setProject({ ...project, location: event.target.value })} className="rounded-lg border p-3" />
         <input placeholder="Budget" value={project.budget} onChange={(event) => setProject({ ...project, budget: event.target.value })} className="rounded-lg border p-3" />

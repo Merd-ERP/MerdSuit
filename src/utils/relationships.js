@@ -31,12 +31,55 @@ function resolveById(records = [], id) {
 export const isArchivedRecord = (record = {}) =>
   record.archived === true || String(record.status || "").toLowerCase() === "archived";
 
+const normalizeName = (value) => String(value || "").trim().toLowerCase();
+
+const recordNames = (record = {}) => [
+  record.name,
+  ...(Array.isArray(record.nameAliases) ? record.nameAliases : []),
+].map(normalizeName).filter(Boolean);
+
+export function getUpdatedNameAliases(record = {}, nextName) {
+  const nextNormalizedName = normalizeName(nextName);
+  const aliases = [
+    ...(Array.isArray(record.nameAliases) ? record.nameAliases : []),
+    record.name,
+  ].map((name) => String(name || "").trim()).filter(Boolean);
+
+  return aliases.filter((name, index) => {
+    const normalizedName = normalizeName(name);
+    return normalizedName !== nextNormalizedName
+      && aliases.findIndex((candidate) => normalizeName(candidate) === normalizedName) === index;
+  });
+}
+
+export function getRestoredStatus(record = {}, fallbackStatus) {
+  const previousStatus = String(record.statusBeforeArchive || "").trim();
+  return previousStatus && previousStatus.toLowerCase() !== "archived"
+    ? previousStatus
+    : fallbackStatus;
+}
+
+export function getClientOptionLabel(client = {}) {
+  const details = [client.phone, client.email, client.location]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  return details.length ? `${client.name} — ${details.join(" · ")}` : client.name || "Unnamed Client";
+}
+
+export function getProjectOptionLabel(project = {}, clients = []) {
+  const client = resolveClient(project, clients);
+  const details = [client?.name || project.clientNameSnapshot || project.client, project.location]
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  return details.length ? `${project.name} — ${details.join(" · ")}` : project.name || "Unnamed Project";
+}
+
 export function findUniqueByName(records = [], name) {
-  const normalizedName = String(name || "").trim().toLowerCase();
+  const normalizedName = normalizeName(name);
   if (!normalizedName) return null;
 
   const matches = records.filter(
-    (record) => String(record.name || "").trim().toLowerCase() === normalizedName
+    (record) => recordNames(record).includes(normalizedName)
   );
 
   return matches.length === 1 ? matches[0] : null;
@@ -84,8 +127,7 @@ export function recordMayReferenceClient(record = {}, client, clients = []) {
   }
 
   const snapshot = record.clientNameSnapshot || record.client;
-  return Boolean(snapshot) && String(snapshot).trim().toLowerCase()
-    === String(client.name || "").trim().toLowerCase();
+  return Boolean(snapshot) && recordNames(client).includes(normalizeName(snapshot));
 }
 
 export function recordMayReferenceProject(record = {}, project, projects = []) {
@@ -97,8 +139,7 @@ export function recordMayReferenceProject(record = {}, project, projects = []) {
   }
 
   const snapshot = record.projectNameSnapshot || record.project;
-  return Boolean(snapshot) && String(snapshot).trim().toLowerCase()
-    === String(project.name || "").trim().toLowerCase();
+  return Boolean(snapshot) && recordNames(project).includes(normalizeName(snapshot));
 }
 
 export function getClientDisplayName(record = {}, clients = [], { current = false } = {}) {

@@ -2,8 +2,10 @@ import { useApp } from "../../context/AppContext";
 import { useToast } from "../../context/ToastContext";
 import { getReceipts } from "../../services/receiptService";
 import {
+  getRestoredStatus,
   isArchivedRecord,
   recordMayReferenceClient,
+  relationshipIdsEqual,
   relationshipOptionValue,
 } from "../../utils/relationships";
 import Card from "../common/Card";
@@ -19,8 +21,8 @@ function ClientsTable({ setClientToEdit }) {
       .some((record) => recordMayReferenceClient(record, client, clients));
 
     if (referenced) {
-      setClients((items) => items.map((item) => item.id === client.id
-        ? { ...item, archived: true, status: "Archived" }
+      setClients((items) => items.map((item) => relationshipIdsEqual(item.id, client.id)
+        ? { ...item, archived: true, statusBeforeArchive: item.status, status: "Archived" }
         : item
       ));
       showToast({
@@ -31,8 +33,20 @@ function ClientsTable({ setClientToEdit }) {
       return;
     }
 
-    setClients((items) => items.filter((item) => item.id !== client.id));
+    setClients((items) => items.filter((item) => !relationshipIdsEqual(item.id, client.id)));
     showToast({ type: "success", title: "Client deleted", message: "Client deleted successfully" });
+  }
+
+  function restoreClient(client) {
+    setClients((items) => items.map((item) => relationshipIdsEqual(item.id, client.id)
+      ? { ...item, archived: false, status: getRestoredStatus(item, "Active") }
+      : item
+    ));
+    showToast({
+      type: "success",
+      title: "Client restored",
+      message: "Client restored successfully.",
+    });
   }
 
   if (clients.length === 0) return <Card><EmptyClients /></Card>;
@@ -47,7 +61,7 @@ function ClientsTable({ setClientToEdit }) {
             return (
               <tr key={relationshipOptionValue(client.id)} className="border-b">
                 <td className="p-3">{client.name}</td><td>{client.phone}</td><td>{client.location}</td><td>{client.email}</td><td>{archived ? "Archived" : client.status}</td>
-                <td><div className="flex flex-wrap gap-2">{!archived && <Button variant="warning" onClick={() => setClientToEdit(client)}>Edit</Button>}{!archived && <Button variant="danger" onClick={() => removeOrArchiveClient(client)}>Delete</Button>}</div></td>
+                <td><div className="flex flex-wrap gap-2">{archived ? <Button variant="secondary" onClick={() => restoreClient(client)}>Restore</Button> : <><Button variant="warning" onClick={() => setClientToEdit(client)}>Edit</Button><Button variant="danger" onClick={() => removeOrArchiveClient(client)}>Delete</Button></>}</div></td>
               </tr>
             );
           })}</tbody>

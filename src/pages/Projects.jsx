@@ -4,7 +4,7 @@ import PageHeader from "../components/common/PageHeader";
 import { useApp } from "../context/AppContext";
 import { useToast } from "../context/ToastContext";
 import { getReceipts } from "../services/receiptService";
-import { recordMayReferenceProject } from "../utils/relationships";
+import { getRestoredStatus, recordMayReferenceProject, relationshipIdsEqual } from "../utils/relationships";
 import ConfirmDialog from "../components/common/ConfirmDialog";
 import ProjectsHeader from "../components/projects/ProjectsHeader";
 import ProjectsStats from "../components/projects/ProjectsStats";
@@ -22,8 +22,8 @@ function Projects() {
       .some((record) => recordMayReferenceProject(record, projectToDelete, projects));
 
     if (referenced) {
-      setProjects((items) => items.map((item) => item.id === projectToDelete.id
-        ? { ...item, archived: true, status: "Archived" }
+      setProjects((items) => items.map((item) => relationshipIdsEqual(item.id, projectToDelete.id)
+        ? { ...item, archived: true, statusBeforeArchive: item.status, status: "Archived" }
         : item
       ));
       showToast({
@@ -32,10 +32,22 @@ function Projects() {
         message: "This project is referenced by business records and was archived instead of deleted.",
       });
     } else {
-      setProjects((items) => items.filter((item) => item.id !== projectToDelete.id));
+      setProjects((items) => items.filter((item) => !relationshipIdsEqual(item.id, projectToDelete.id)));
       showToast({ type: "success", title: "Project deleted", message: "Project deleted successfully" });
     }
     setProjectToDelete(null);
+  }
+
+  function restoreProject(project) {
+    setProjects((items) => items.map((item) => relationshipIdsEqual(item.id, project.id)
+      ? { ...item, archived: false, status: getRestoredStatus(item, "Planning") }
+      : item
+    ));
+    showToast({
+      type: "success",
+      title: "Project restored",
+      message: "Project restored successfully.",
+    });
   }
 
   return (
@@ -44,7 +56,7 @@ function Projects() {
       <ProjectsHeader />
       <ProjectsStats />
       <ProjectForm key={projectToEdit?.id ?? "new"} projectToEdit={projectToEdit} setProjectToEdit={setProjectToEdit} />
-      <ProjectsTable setProjectToEdit={setProjectToEdit} onDelete={setProjectToDelete} />
+      <ProjectsTable setProjectToEdit={setProjectToEdit} onDelete={setProjectToDelete} onRestore={restoreProject} />
       <ConfirmDialog isOpen={Boolean(projectToDelete)} title="Delete Project?" message={`Are you sure you want to delete project ${projectToDelete?.name || ""}? Referenced projects will be archived to preserve business history.`} onCancel={() => setProjectToDelete(null)} onConfirm={deleteProject} confirmLabel="Delete Project" />
     </MainLayout>
   );

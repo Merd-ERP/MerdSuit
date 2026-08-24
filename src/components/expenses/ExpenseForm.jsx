@@ -4,9 +4,11 @@ import { useApp } from "../../context/AppContext";
 import { useToast } from "../../context/ToastContext";
 import {
   findByRelationshipOptionValue,
+  getProjectOptionLabel,
   isArchivedRecord,
   relationshipIdsEqual,
   relationshipOptionValue,
+  resolveClient,
   resolveProject,
 } from "../../utils/relationships";
 
@@ -19,6 +21,7 @@ function ExpenseForm({
   const {
     addExpense,
     updateExpense,
+    clients,
     projects,
   } = useApp();
 
@@ -39,8 +42,14 @@ function ExpenseForm({
   const [expense, setExpense] = useState(() => expenseToEdit || emptyExpense);
   const selectedProject = resolveProject(expense, projects);
   const availableProjects = projects.filter(
-    (project) => !isArchivedRecord(project)
-      || relationshipIdsEqual(project.id, selectedProject?.id)
+    (project) => {
+      const isSelectedProject = relationshipIdsEqual(project.id, selectedProject?.id);
+      const projectClient = resolveClient(project, clients);
+      return isSelectedProject || (
+        !isArchivedRecord(project)
+        && (!projectClient || !isArchivedRecord(projectClient))
+      );
+    }
   );
 
   function resetForm() {
@@ -195,7 +204,7 @@ function ExpenseForm({
               key={relationshipOptionValue(project.id)}
               value={relationshipOptionValue(project.id)}
             >
-              {project.name}
+              {getProjectOptionLabel(project, clients)}
             </option>
           ))}
         </select>

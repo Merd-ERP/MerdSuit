@@ -4,7 +4,7 @@ import Card from "../common/Card";
 import Button from "../common/Button";
 import EmptyProjects from "./EmptyProjects";
 
-function ProjectsTable({ setProjectToEdit, onDelete }) {
+function ProjectsTable({ setProjectToEdit, onDelete, onRestore }) {
   const { clients, projects } = useApp();
   if (projects.length === 0) return <Card><EmptyProjects /></Card>;
 
@@ -23,7 +23,7 @@ function ProjectsTable({ setProjectToEdit, onDelete }) {
                 <td>{project.budget}</td>
                 <td className="max-w-48 truncate" title={project.description}>{project.description || "—"}</td>
                 <td>{archived ? "Archived" : project.status}</td>
-                <td><div className="flex flex-wrap gap-2">{!archived && <Button variant="warning" onClick={() => setProjectToEdit(project)}>Edit</Button>}{!archived && <Button variant="danger" onClick={() => onDelete(project)}>Delete</Button>}</div></td>
+                <td><div className="flex flex-wrap gap-2">{archived ? <Button variant="secondary" onClick={() => onRestore(project)}>Restore</Button> : <><Button variant="warning" onClick={() => setProjectToEdit(project)}>Edit</Button><Button variant="danger" onClick={() => onDelete(project)}>Delete</Button></>}</div></td>
               </tr>
             );
           })}</tbody>

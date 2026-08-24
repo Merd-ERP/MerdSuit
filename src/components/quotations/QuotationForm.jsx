@@ -1,6 +1,8 @@
 import {
   isArchivedRecord,
   findByRelationshipOptionValue,
+  getClientOptionLabel,
+  getProjectOptionLabel,
   relationshipIdsEqual,
   relationshipOptionValue,
   resolveClient,
@@ -17,12 +19,17 @@ function QuotationForm({ quotation, setQuotation, clients, projects }) {
     (client) => !isArchivedRecord(client) || relationshipIdsEqual(client.id, selectedClient?.id)
   );
   const availableProjects = projects.filter((project) => {
-    if (isArchivedRecord(project) && !relationshipIdsEqual(project.id, selectedProject?.id)) {
+    const isSelectedProject = relationshipIdsEqual(project.id, selectedProject?.id);
+    if (isArchivedRecord(project) && !isSelectedProject) {
+      return false;
+    }
+
+    const projectClient = resolveClient(project, clients);
+    if (projectClient && isArchivedRecord(projectClient) && !isSelectedProject) {
       return false;
     }
     if (!selectedClient) return true;
 
-    const projectClient = resolveClient(project, clients);
     return projectClient
       ? relationshipIdsEqual(projectClient.id, selectedClient.id)
       : false;
@@ -73,12 +80,12 @@ function QuotationForm({ quotation, setQuotation, clients, projects }) {
     <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <select value={selectedClientId} onChange={(event) => changeClient(event.target.value)} className="rounded-lg border p-2">
         <option value="">Select Client</option>
-        {availableClients.map((client) => <option key={relationshipOptionValue(client.id)} value={relationshipOptionValue(client.id)}>{client.name}</option>)}
+        {availableClients.map((client) => <option key={relationshipOptionValue(client.id)} value={relationshipOptionValue(client.id)}>{getClientOptionLabel(client)}</option>)}
       </select>
 
       <select value={selectedProjectId} onChange={(event) => changeProject(event.target.value)} className="rounded-lg border p-2">
         <option value="">No Project</option>
-        {availableProjects.map((project) => <option key={relationshipOptionValue(project.id)} value={relationshipOptionValue(project.id)}>{project.name}</option>)}
+        {availableProjects.map((project) => <option key={relationshipOptionValue(project.id)} value={relationshipOptionValue(project.id)}>{getProjectOptionLabel(project, clients)}</option>)}
       </select>
 
       <input type="date" value={quotation.date} onChange={(event) => setQuotation({ ...quotation, date: event.target.value })} className="rounded-lg border p-2" />
