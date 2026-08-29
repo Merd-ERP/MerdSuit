@@ -7,8 +7,26 @@ import {
   registerPdfFont,
 } from "./pdfUtils";
 import { formatCurrency } from "../../utils/currency";
+import { validateAndNormalizeQuotationValues } from "../../utils/quotationItems";
+import { isDraftQuotation } from "../../utils/quotationStatus";
 
 export async function generateQuotationPDF(quotation) {
+  if (
+    isDraftQuotation(quotation)
+    || !String(quotation?.quotationNumber || "").trim()
+    || !String(quotation?.clientNameSnapshot || quotation?.client || "").trim()
+  ) {
+    throw new Error("Only saved, finalized quotations can be exported.");
+  }
+  const validation = validateAndNormalizeQuotationValues({
+    materials: quotation.materials || [],
+    labour: quotation.labour,
+    transport: quotation.transport,
+    discount: quotation.discount,
+    expectedTotal: quotation.total,
+  });
+  if (!validation.valid) throw new Error(validation.message);
+
   const doc = createPDF();
   await registerPdfFont(doc);
 
@@ -24,13 +42,13 @@ export async function generateQuotationPDF(quotation) {
   doc.setFontSize(11);
 
   doc.text(
-    `Client: ${quotation.client}`,
+    `Client: ${quotation.clientNameSnapshot || quotation.client || ""}`,
     15,
     70
   );
 
   doc.text(
-    `Project: ${quotation.project}`,
+    `Project: ${quotation.projectNameSnapshot || quotation.project || ""}`,
     15,
     77
   );
@@ -51,7 +69,7 @@ export async function generateQuotationPDF(quotation) {
       "Total",
     ]],
 
- body: quotation.materials.map((item) => [
+ body: validation.materials.map((item) => [
   item.description,
   item.quantity,
   formatCurrency(item.price),
@@ -61,13 +79,25 @@ export async function generateQuotationPDF(quotation) {
     headStyles: { font: pdfFontName, fontStyle: "bold" },
   });
 
-  const finalY = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || 90) + 10;
+  let finalY = ((doc.lastAutoTable && doc.lastAutoTable.finalY) || 90) + 10;
+
+  doc.setFont(pdfFontName, "normal");
+  const rows = [
+    ["Materials subtotal", validation.materialTotal],
+    ...(validation.labour > 0 ? [["Labour", validation.labour]] : []),
+    ...(validation.transport > 0 ? [["Transport", validation.transport]] : []),
+    ...(validation.discount > 0 ? [["Discount", -validation.discount]] : []),
+  ];
+  rows.forEach(([label, amount]) => {
+    doc.text(label, 135, finalY);
+    doc.text(formatCurrency(amount), 195, finalY, { align: "right" });
+    finalY += 7;
+  });
 
   doc.setFont(pdfFontName, "bold");
-
   doc.text(
-    `Grand Total: ${formatCurrency(quotation.total)}`,
-    150,
+    `Grand Total: ${formatCurrency(validation.total)}`,
+    195,
     finalY,
     {
       align: "right",
@@ -77,6 +107,6 @@ export async function generateQuotationPDF(quotation) {
   addFooter(doc);
 
   doc.save(
-    `Quotation-${quotation.client}.pdf`
+    `Quotation-${quotation.clientNameSnapshot || quotation.client}.pdf`
   );
 }

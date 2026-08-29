@@ -4,6 +4,9 @@ import { useApp } from "../context/AppContext";
 import { generateQuotationPDF } from "../services/pdf/quotationPdf";
 import { formatCurrency, getCompanyCurrency } from "../utils/currency";
 import { useToast } from "../context/ToastContext";
+import { resolveQuotationRoute } from "../utils/quotationIdentity";
+import { hasQuotationStatus, isDraftQuotation } from "../utils/quotationStatus";
+import { validateAndNormalizeQuotationValues } from "../utils/quotationItems";
 
 function QuotationDetails() {
   const { id } = useParams();
@@ -11,19 +14,32 @@ function QuotationDetails() {
 
   const { quotations } = useApp();
 
-  const quotation = quotations.find(
-    (q) => q.id.toString() === id
-  );
+  const quotation = resolveQuotationRoute(quotations, id);
 
   const company =
     JSON.parse(localStorage.getItem("company")) || {};
 
   function canIssueQuotation() {
-    if (quotation?.status === "Draft" || !quotation?.client) {
+    if (isDraftQuotation(quotation) || !String(quotation?.clientNameSnapshot || quotation?.client || "").trim() || !String(quotation?.quotationNumber || "").trim()) {
       showToast({
         type: "warning",
         title: "Finalize quotation first",
         message: "Link a client and save this draft as a quotation before issuing it.",
+      });
+      return false;
+    }
+    const validation = validateAndNormalizeQuotationValues({
+      materials: quotation.materials,
+      labour: quotation.labour,
+      transport: quotation.transport,
+      discount: quotation.discount,
+      expectedTotal: quotation.total,
+    });
+    if (!validation.valid) {
+      showToast({
+        type: "warning",
+        title: "Quotation cannot be issued",
+        message: validation.message,
       });
       return false;
     }
@@ -63,6 +79,18 @@ function QuotationDetails() {
       </MainLayout>
     );
   }
+
+  const customerDocumentValidation = validateAndNormalizeQuotationValues({
+    materials: quotation.materials,
+    labour: quotation.labour,
+    transport: quotation.transport,
+    discount: quotation.discount,
+    expectedTotal: quotation.total,
+  });
+  const canShowCustomerDocumentActions = !isDraftQuotation(quotation)
+    && Boolean(String(quotation.clientNameSnapshot || quotation.client || "").trim())
+    && Boolean(String(quotation.quotationNumber || "").trim())
+    && customerDocumentValidation.valid;
 
   return (
     <MainLayout>
@@ -123,11 +151,11 @@ function QuotationDetails() {
 
       <span
         className={`inline-block px-4 py-2 rounded-full font-semibold ${
-          quotation.status === "Converted"
+          hasQuotationStatus(quotation, "Converted")
             ? "bg-purple-100 text-purple-700"
-            : quotation.status === "Accepted"
+            : hasQuotationStatus(quotation, "Accepted")
             ? "bg-green-100 text-green-700"
-            : quotation.status === "Rejected"
+            : hasQuotationStatus(quotation, "Rejected")
             ? "bg-red-100 text-red-700"
             : "bg-yellow-100 text-yellow-700"
         }`}
@@ -152,7 +180,7 @@ function QuotationDetails() {
     </p>
 
     <h3 className="text-xl font-bold mt-2">
-      {quotation.client}
+      {quotation.clientNameSnapshot || quotation.client || "Not linked"}
     </h3>
 
   </div>
@@ -164,7 +192,7 @@ function QuotationDetails() {
     </p>
 
     <h3 className="text-xl font-bold mt-2">
-      {quotation.project}
+      {quotation.projectNameSnapshot || quotation.project || "—"}
     </h3>
 
   </div>
@@ -231,7 +259,7 @@ function QuotationDetails() {
 
           <tbody>
 
-            {quotation.materials?.map((item) => (
+            {(quotation.materials || []).map((item) => (
 
               <tr key={item.id}>
 
@@ -304,19 +332,19 @@ function QuotationDetails() {
     ← Back
   </button>
 
-  <button
+  {canShowCustomerDocumentActions && <button
     onClick={printQuotation}
     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg"
   >
     🖨 Print
-  </button>
+  </button>}
 
-  <button
+  {canShowCustomerDocumentActions && <button
     onClick={downloadPdf}
     className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg"
   >
     📄 Download PDF
-  </button>
+  </button>}
 
 </div>
 

@@ -3,6 +3,7 @@ import { Users } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { formatCurrency } from "../../utils/currency";
 import { recordMatchesClient, relationshipOptionValue } from "../../utils/relationships";
+import { isDraftQuotation } from "../../utils/quotationStatus";
 
 function ClientReport() {
   const {
@@ -19,7 +20,7 @@ function ClientReport() {
       );
 
       const clientQuotations = quotations.filter(
-        (quotation) => quotation.status !== "Draft" && recordMatchesClient(quotation, client, clients)
+        (quotation) => !isDraftQuotation(quotation) && recordMatchesClient(quotation, client, clients)
       );
 
       const clientInvoices = invoices.filter(

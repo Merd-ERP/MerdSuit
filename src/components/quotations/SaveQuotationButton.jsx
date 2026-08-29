@@ -1,9 +1,9 @@
 import { useApp } from "../../context/AppContext";
 import { useToast } from "../../context/ToastContext";
-import { generateQuotationNumber } from "../../services/quotationService";
+import { generateQuotationNumber } from "../../services/quotationService.js";
 import Button from "../common/Button";
-import { hasMeaningfulQuotationItems } from "../../utils/quotationItems";
-import { relationshipIdsEqual, resolveClient, resolveProject } from "../../utils/relationships";
+import { validateAndNormalizeQuotationValues } from "../../utils/quotationItems";
+import { isArchivedRecord, relationshipIdsEqual, resolveClient, resolveProject } from "../../utils/relationships";
 
 function SaveQuotationButton({
   quotation,
@@ -11,24 +11,25 @@ function SaveQuotationButton({
   labour,
   transport,
   discount,
-  finalTotal,
   resetForm,
   editingQuotation,
   asDraft = false,
 }) {
-  const { clients, projects, setQuotations } = useApp();
+  const { clients, projects, quotations, setQuotations } = useApp();
   const { showToast } = useToast();
 
   function handleSave() {
-    const hasValidItems = hasMeaningfulQuotationItems(materials);
     const currentClient = resolveClient(quotation, clients);
     const currentProject = resolveProject(quotation, projects);
+    const validation = validateAndNormalizeQuotationValues({ materials, labour, transport, discount });
 
-    if (asDraft && !hasValidItems) {
+    if (asDraft && !validation.valid) {
       showToast({
         type: "warning",
-        title: "Item required",
-        message: "Add at least one item before saving this draft.",
+        title: "Quotation needs attention",
+        message: validation.message === "Add at least one meaningful item or service."
+          ? "Add at least one item before saving this draft."
+          : validation.message,
       });
       return;
     }
@@ -42,19 +43,41 @@ function SaveQuotationButton({
       return;
     }
 
-    if (!asDraft && !hasValidItems) {
+    if (!asDraft && isArchivedRecord(currentClient)) {
       showToast({
         type: "warning",
-        title: "Item required",
-        message: "Add at least one item before saving this quotation.",
+        title: "Restore client first",
+        message: "Restore the archived client before finalizing this quotation.",
       });
       return;
     }
 
+    if (!asDraft && currentProject && isArchivedRecord(currentProject)) {
+      showToast({
+        type: "warning",
+        title: "Restore or remove project",
+        message: "Restore the archived project or remove it before finalizing this quotation.",
+      });
+      return;
+    }
+
+    if (!asDraft && !validation.valid) {
+      showToast({
+        type: "warning",
+        title: "Quotation needs attention",
+        message: validation.message === "Add at least one meaningful item or service."
+          ? "Add at least one item before saving this quotation."
+          : validation.message,
+      });
+      return;
+    }
+
+    const quotationNumber = editingQuotation?.quotationNumber || generateQuotationNumber(quotations);
+
     const savedQuotation = {
       ...(editingQuotation || {}),
       id: editingQuotation?.id ?? Date.now(),
-      quotationNumber: editingQuotation?.quotationNumber || generateQuotationNumber(),
+      quotationNumber,
       ...quotation,
       clientId: currentClient?.id ?? "",
       client: currentClient?.name || quotation.clientNameSnapshot || quotation.client || "",
@@ -62,11 +85,11 @@ function SaveQuotationButton({
       projectId: currentProject?.id ?? "",
       project: currentProject?.name || quotation.projectNameSnapshot || quotation.project || "",
       projectNameSnapshot: currentProject?.name || quotation.projectNameSnapshot || quotation.project || "",
-      materials,
-      labour: Number(labour || 0),
-      transport: Number(transport || 0),
-      discount: Number(discount || 0),
-      total: finalTotal,
+      materials: validation.materials,
+      labour: validation.labour,
+      transport: validation.transport,
+      discount: validation.discount,
+      total: validation.total,
       status: asDraft ? "Draft" : "Pending",
       createdAt: editingQuotation?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),

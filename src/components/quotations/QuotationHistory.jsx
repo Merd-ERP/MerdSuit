@@ -8,7 +8,11 @@ import { formatCurrency } from "../../utils/currency";
 import {
   getClientDisplayName,
   getProjectDisplayName,
+  relationshipIdsEqual,
+  relationshipOptionValue,
 } from "../../utils/relationships";
+import { getQuotationRouteToken } from "../../utils/quotationIdentity";
+import { isConvertedQuotation, isDraftQuotation, normalizeQuotationStatus } from "../../utils/quotationStatus";
 import ConfirmDialog from "../common/ConfirmDialog";
 
 function QuotationHistory({ onEdit }) {
@@ -28,7 +32,7 @@ function QuotationHistory({ onEdit }) {
 
   const filteredQuotations = quotations.filter((quotation) => {
     const text = search.toLowerCase();
-    const useCurrentNames = quotation.status === "Draft";
+    const useCurrentNames = isDraftQuotation(quotation);
     const clientName = getClientDisplayName(quotation, clients, { current: useCurrentNames });
     const projectName = getProjectDisplayName(quotation, projects, { current: useCurrentNames });
 
@@ -42,7 +46,7 @@ function QuotationHistory({ onEdit }) {
   function deleteQuotation() {
     if (!quotationToDelete) return;
     setQuotations((prev) =>
-      prev.filter((quotation) => quotation.id !== quotationToDelete.id)
+      prev.filter((quotation) => !relationshipIdsEqual(quotation.id, quotationToDelete.id))
     );
     showToast({
       type: "success",
@@ -53,7 +57,8 @@ function QuotationHistory({ onEdit }) {
   }
 
   function convertQuotation(quotation) {
-    if (quotation.status === "Draft" || !quotation.client) {
+    const hasClient = Boolean(String(quotation.clientNameSnapshot || quotation.client || "").trim());
+    if (isDraftQuotation(quotation) || !hasClient) {
       showToast({
         type: "warning",
         title: "Finalize quotation first",
@@ -62,7 +67,7 @@ function QuotationHistory({ onEdit }) {
       return;
     }
 
-    const quotationKey = String(quotation.id ?? quotation.quotationNumber);
+    const quotationKey = relationshipOptionValue(quotation.id) || quotation.quotationNumber;
     if (conversionsInProgress.current.has(quotationKey)) {
       return;
     }
@@ -73,14 +78,14 @@ function QuotationHistory({ onEdit }) {
     try {
       const { invoice, created } = convertQuotationToInvoice(quotation);
 
-      setInvoices((prev) => prev.some((item) => item.id === invoice.id)
+      setInvoices((prev) => prev.some((item) => relationshipIdsEqual(item.id, invoice.id))
         ? prev
         : [...prev, invoice]
       );
 
       setQuotations((prev) =>
         prev.map((item) =>
-          item.id === quotation.id
+          relationshipIdsEqual(item.id, quotation.id)
             ? {
                 ...item,
                 status: "Converted",
@@ -111,7 +116,8 @@ function QuotationHistory({ onEdit }) {
   }
 
   async function downloadQuotationPdf(quotation) {
-    if (quotation.status === "Draft" || !quotation.client) {
+    const hasClient = Boolean(String(quotation.clientNameSnapshot || quotation.client || "").trim());
+    if (isDraftQuotation(quotation) || !hasClient || !String(quotation.quotationNumber || "").trim()) {
       showToast({
         type: "warning",
         title: "Finalize quotation first",
@@ -137,36 +143,36 @@ function QuotationHistory({ onEdit }) {
   }
 
   function getStatusBadge(status) {
-    switch (status) {
-      case "Draft":
+    switch (normalizeQuotationStatus(status)) {
+      case "draft":
         return (
           <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-sm font-semibold">
             Draft
           </span>
         );
 
-      case "Accepted":
+      case "accepted":
         return (
           <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
             Accepted
           </span>
         );
 
-      case "Rejected":
+      case "rejected":
         return (
           <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-semibold">
             Rejected
           </span>
         );
 
-      case "Converted":
+      case "converted":
         return (
           <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm font-semibold">
             Converted
           </span>
         );
 
-      case "Sent":
+      case "sent":
         return (
           <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-semibold">
             Sent
@@ -220,12 +226,12 @@ function QuotationHistory({ onEdit }) {
 
           <tbody>
             {filteredQuotations.map((quotation) => {
-              const useCurrentNames = quotation.status === "Draft";
+              const useCurrentNames = isDraftQuotation(quotation);
               const clientName = getClientDisplayName(quotation, clients, { current: useCurrentNames });
               const projectName = getProjectDisplayName(quotation, projects, { current: useCurrentNames });
               return (
               <tr
-                key={quotation.id}
+                key={relationshipOptionValue(quotation.id) || quotation.quotationNumber}
                 className="hover:bg-gray-50"
               >
                 <td className="border p-3 font-semibold">
@@ -255,13 +261,13 @@ function QuotationHistory({ onEdit }) {
                 <td className="border p-3">
                   <div className="flex flex-wrap gap-2 justify-center">
                    <Link
-  to={`/quotation/${quotation.id}`}
+  to={`/quotation/${getQuotationRouteToken(quotation)}`}
   className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-1 rounded"
 >
   View
 </Link>
 
-                    {quotation.status === "Draft" && (
+                    {isDraftQuotation(quotation) && (
                       <button
                         onClick={() => onEdit(quotation)}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
@@ -270,23 +276,25 @@ function QuotationHistory({ onEdit }) {
                       </button>
                     )}
 
-                    <button
+                    {!isDraftQuotation(quotation)
+                      && String(quotation.clientNameSnapshot || quotation.client || "").trim()
+                      && String(quotation.quotationNumber || "").trim() && <button
   onClick={() => downloadQuotationPdf(quotation)}
   className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
 >
   PDF
-</button>
+</button>}
 
                     <button
                       onClick={() => convertQuotation(quotation)}
-                      disabled={quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client || convertingQuotationId === String(quotation.id ?? quotation.quotationNumber)}
+                      disabled={isConvertedQuotation(quotation) || isDraftQuotation(quotation) || !String(quotation.clientNameSnapshot || quotation.client || "").trim() || convertingQuotationId === (relationshipOptionValue(quotation.id) || quotation.quotationNumber)}
                       className={`px-3 py-1 rounded text-white ${
-                        quotation.status === "Converted" || quotation.status === "Draft" || !quotation.client || convertingQuotationId === String(quotation.id ?? quotation.quotationNumber)
+                        isConvertedQuotation(quotation) || isDraftQuotation(quotation) || !String(quotation.clientNameSnapshot || quotation.client || "").trim() || convertingQuotationId === (relationshipOptionValue(quotation.id) || quotation.quotationNumber)
                           ? "bg-gray-400 cursor-not-allowed"
                           : "bg-green-600 hover:bg-green-700"
                       }`}
                     >
-                      {convertingQuotationId === String(quotation.id ?? quotation.quotationNumber) ? "Converting..." : "Convert"}
+                      {convertingQuotationId === (relationshipOptionValue(quotation.id) || quotation.quotationNumber) ? "Converting..." : "Convert"}
                     </button>
 
                     <button

@@ -30,7 +30,7 @@ function MaterialsTable({
       ) : (
         <>
           {/* Table Header */}
-          <div className="grid grid-cols-5 gap-4 mb-3 font-semibold text-gray-700 border-b-2 pb-3">
+          <div className="mb-3 hidden grid-cols-[minmax(0,2fr)_minmax(90px,0.7fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(90px,0.7fr)] gap-4 border-b-2 pb-3 font-semibold text-gray-700 md:grid">
             <div>Material</div>
             <div className="text-center">Quantity</div>
             <div className="text-center">Unit Price ({getCompanyCurrency()})</div>
@@ -41,61 +41,60 @@ function MaterialsTable({
           {materials.map((material) => (
             <div
               key={material.id}
-              className="grid grid-cols-5 gap-4 mb-4 items-center"
+              className="mb-4 grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[minmax(0,2fr)_minmax(90px,0.7fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(90px,0.7fr)] md:items-center md:border-0 md:p-0"
             >
               {/* Material */}
-              <input
-                placeholder="Material Name"
-                value={material.description}
-                onChange={(e) =>
-                  updateMaterial(
-                    material.id,
-                    "description",
-                    e.target.value
-                  )
-                }
-                className="border rounded-lg p-3"
-              />
+              <label className="grid min-w-0 gap-1 text-sm font-medium text-slate-700 md:block">
+                <span className="md:hidden">Material or Service</span>
+                <input
+                  placeholder="Material or Service"
+                  value={material.description}
+                  onChange={(e) => updateMaterial(material.id, "description", e.target.value)}
+                  className="w-full min-w-0 rounded-lg border p-3"
+                />
+              </label>
 
               {/* Quantity */}
-              <input
-                type="number"
-                min="1"
-                value={material.quantity}
-                onChange={(e) =>
-                  updateMaterial(
-                    material.id,
-                    "quantity",
-                    e.target.value
-                  )
-                }
-                className="border rounded-lg p-3 text-center"
-              />
+              <label className="grid min-w-0 gap-1 text-sm font-medium text-slate-700 md:block">
+                <span className="md:hidden">Quantity</span>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="any"
+                  value={material.quantity}
+                  onChange={(e) => updateMaterial(material.id, "quantity", e.target.value)}
+                  className="w-full min-w-0 rounded-lg border p-3 text-center"
+                />
+              </label>
 
               {/* Unit Price */}
-              <input
-                type="number"
-                min="0"
-                value={material.price}
-                onChange={(e) =>
-                  updateMaterial(
-                    material.id,
-                    "price",
-                    e.target.value
-                  )
-                }
-                className="border rounded-lg p-3 text-right"
-              />
+              <label className="grid min-w-0 gap-1 text-sm font-medium text-slate-700 md:block">
+                <span className="md:hidden">Unit Price ({getCompanyCurrency()})</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="Enter unit price"
+                  value={material.price}
+                  onChange={(e) => updateMaterial(material.id, "price", e.target.value)}
+                  className="w-full min-w-0 rounded-lg border p-3 text-right"
+                />
+              </label>
 
               {/* Total */}
-              <div className="border rounded-lg p-3 bg-gray-100 text-right font-semibold">
-                {formatCurrency(material.quantity * material.price)}
+              <div className="min-w-0">
+                <span className="mb-1 block text-sm font-medium text-slate-700 md:hidden">Item Total</span>
+                <div className="rounded-lg border bg-gray-100 p-3 text-right font-semibold">
+                  {Number.isFinite(Number(material.quantity) * Number(material.price))
+                    ? formatCurrency(Number(material.quantity) * Number(material.price))
+                    : "Invalid"}
+                </div>
               </div>
 
               {/* Delete */}
               <button
                 onClick={() => deleteMaterial(material.id)}
-                className="bg-red-600 hover:bg-red-700 text-white rounded-lg py-3 font-medium"
+                className="w-full rounded-lg bg-red-600 py-3 font-medium text-white hover:bg-red-700 md:w-auto"
               >
                 Delete
               </button>
