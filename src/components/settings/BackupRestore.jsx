@@ -3,6 +3,7 @@ import Card from "../common/Card";
 import Button from "../common/Button";
 import Modal from "../common/Modal";
 import { useToast } from "../../context/ToastContext";
+import { readInventoryMovements } from "../../utils/inventoryMovements";
 
 const BACKUP_VERSION = 1;
 
@@ -13,6 +14,7 @@ const backupFields = {
   invoices: "array",
   receipts: "array",
   inventory: "array",
+  inventoryMovements: "array",
   suppliers: "array",
   purchaseOrders: "array",
   expenses: "array",
@@ -20,6 +22,8 @@ const backupFields = {
 };
 
 function readStoredValue(key, type) {
+  if (key === "inventoryMovements") return readInventoryMovements();
+
   const rawValue = localStorage.getItem(key);
 
   if (rawValue === null) {
@@ -60,6 +64,7 @@ function validateBackup(backup) {
 
   for (const [key, type] of Object.entries(backupFields)) {
     const value = backup.data[key];
+    if (key === "inventoryMovements" && value === undefined) continue;
     const isValid = type === "array"
       ? Array.isArray(value)
       : value === null || (typeof value === "object" && !Array.isArray(value));
@@ -148,7 +153,9 @@ function BackupRestore() {
 
     try {
       Object.entries(backupFields).forEach(([key]) => {
-        const value = pendingBackup.data[key];
+        const value = key === "inventoryMovements"
+          ? pendingBackup.data[key] ?? []
+          : pendingBackup.data[key];
 
         if (key === "company" && value === null) {
           localStorage.removeItem(key);

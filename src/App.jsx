@@ -17,6 +17,7 @@ import ReceiptDetails from "./pages/ReceiptDetails";
 import Inventory from "./pages/Inventory";
 import Suppliers from "./pages/Suppliers";
 import PurchaseOrders from "./pages/PurchaseOrders";
+import PurchaseOrderDetailsPage from "./pages/PurchaseOrderDetailsPage";
 
 import Expenses from "./pages/Expenses";
 import Reports from "./pages/Reports";
@@ -103,6 +104,11 @@ function App() {
       <Route
         path="/purchase-orders"
         element={<PurchaseOrders />}
+      />
+
+      <Route
+        path="/purchase-orders/:id"
+        element={<PurchaseOrderDetailsPage />}
       />
 
       {/* Expenses */}

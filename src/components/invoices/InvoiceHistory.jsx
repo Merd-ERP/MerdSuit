@@ -6,6 +6,7 @@ import {
 } from "../../services/invoiceService";
 import { formatCurrency } from "../../utils/currency";
 import { getInvoicePaymentStatus } from "../../utils/invoicePayments";
+import { getFinancialRouteToken } from "../../utils/financialIdentity";
 
 function InvoiceHistory() {
   const invoices = getInvoices();
@@ -15,9 +16,9 @@ function InvoiceHistory() {
 
   const filteredInvoices = invoices.filter((invoice) => {
     const matchesSearch =
-      invoice.client.toLowerCase().includes(search.toLowerCase()) ||
-      invoice.project.toLowerCase().includes(search.toLowerCase()) ||
-      invoice.invoiceNumber.toLowerCase().includes(search.toLowerCase());
+      String(invoice.clientNameSnapshot || invoice.client || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(invoice.projectNameSnapshot || invoice.project || "").toLowerCase().includes(search.toLowerCase()) ||
+      String(invoice.invoiceNumber || "").toLowerCase().includes(search.toLowerCase());
 
     const status = getInvoicePaymentStatus(invoice);
     const matchesFilter = filter === "All" || status === filter;
@@ -104,7 +105,7 @@ function InvoiceHistory() {
                 </td>
 
                 <td className="border p-2">
-                  {formatCurrency(invoice.total)}
+                  {formatCurrency(Number.isFinite(Number(invoice.total)) && Number(invoice.total) >= 0 ? Number(invoice.total) : 0)}
                 </td>
 
                 <td className="border p-2">
@@ -116,7 +117,7 @@ function InvoiceHistory() {
                   <div className="flex gap-2">
 
                     <Link
-                      to={`/invoice/${invoice.id}`}
+                      to={`/invoice/${getFinancialRouteToken(invoice)}`}
                       className="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded"
                     >
                       View
@@ -125,7 +126,7 @@ function InvoiceHistory() {
                     {status !== "Paid" ? (
 
                       <Link
-                        to={`/invoice/${invoice.id}`}
+                        to={`/invoice/${getFinancialRouteToken(invoice)}`}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
                       >
                         Record Payment

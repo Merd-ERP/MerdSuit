@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "../layouts/Mainlayout";
@@ -20,13 +20,23 @@ import { formatCurrency } from "../utils/currency";
 import {
   getInvoiceAmountPaid,
   getInvoiceBalance,
-  getMaximumEditablePaymentAmount,
   getInvoicePayments,
+  getInvoicePaymentStatus,
   recalculateInvoicePaymentState,
-  roundCurrencyAmount,
+  validateInvoicePayment,
+  applyPaidInventoryTransition,
 } from "../utils/invoicePayments";
+import {
+  createFinancialId,
+  hasRelationshipId,
+  relationshipIdsEqual,
+  resolveFinancialRoute,
+} from "../utils/financialIdentity";
 
-const createPaymentId = () => Date.now();
+const safeDocumentAmount = (value) => {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
+};
 
 function InvoiceDetails() {
   const { id } = useParams();
@@ -36,16 +46,17 @@ function InvoiceDetails() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
   const [paymentToDelete, setPaymentToDelete] = useState(null);
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
+  const paymentSubmissionInProgress = useRef(false);
 
   const invoices = getInvoices();
 
-  const invoice = invoices.find(
-    (inv) => inv.id.toString() === id
-  );
+  const invoice = resolveFinancialRoute(invoices, id);
 
   const currentAmountPaid = getInvoiceAmountPaid(invoice);
   const remainingBalance = getInvoiceBalance(invoice);
-  const invoicePayments = getInvoicePayments(invoice);
+  const invoicePayments = getInvoicePayments(invoice).filter(Boolean);
+  const invoiceStatus = getInvoicePaymentStatus(invoice);
 
   const company =
     JSON.parse(localStorage.getItem("company")) || {};
@@ -58,44 +69,27 @@ function InvoiceDetails() {
   });
 
   function savePayment() {
-    const amount = Number(payment.amount);
-
-    if (!Number.isFinite(amount) || amount <= 0) {
-      showToast({
-        type: "error",
-        title: "Invalid payment amount",
-        message: "Enter a valid payment amount.",
-      });
+    if (paymentSubmissionInProgress.current) return;
+    const validation = validateInvoicePayment({ invoice, value: payment.amount, date: payment.date });
+    if (!validation.valid) {
+      showToast({ type: "error", title: "Payment rejected", message: validation.maximumAmount !== undefined
+        ? `The maximum payment allowed is ${formatCurrency(validation.maximumAmount)}.`
+        : validation.message });
       return;
     }
 
-    if (remainingBalance <= 0) {
-      showToast({
-        type: "warning",
-        title: "Invoice already paid",
-        message: "This invoice is fully paid. No additional payment can be recorded.",
-      });
-      return;
-    }
-
-    if (amount > remainingBalance) {
-      showToast({
-        type: "error",
-        title: "Payment exceeds balance",
-        message: `The maximum payment allowed is ${formatCurrency(remainingBalance)}.`,
-      });
-      return;
-    }
+    paymentSubmissionInProgress.current = true;
+    setIsSavingPayment(true);
 
     const newPayment = {
-      id: createPaymentId(),
-      amount,
+      id: createFinancialId("payment"),
+      amount: validation.amount,
       method: payment.method,
       reference: payment.reference,
       date: payment.date,
     };
 
-    const updatedInvoice = recalculateInvoicePaymentState({
+    let updatedInvoice = recalculateInvoicePaymentState({
       ...invoice,
       paymentHistoryVersion: 1,
       payments: [
@@ -103,31 +97,23 @@ function InvoiceDetails() {
         newPayment,
       ],
     });
+    updatedInvoice = applyPaidInventoryTransition(
+      updatedInvoice,
+      deductInventoryFromInvoice,
+    ).invoice;
 
-updateInvoice(updatedInvoice);
-setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
-  currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
-));
-
-// Deduct stock ONLY once
-if (updatedInvoice.status === "Paid") {
-  deductInventoryFromInvoice(updatedInvoice.materials);
-}
-
-// Create receipt
-createPaymentReceipt(updatedInvoice, newPayment);
-
-setPayment({
-  amount: "",
-  method: "Cash",
-  reference: "",
-  date: new Date().toISOString().split("T")[0],
-});
-showToast({
-  type: "success",
-  title: "Payment recorded",
-  message: "Payment recorded successfully",
-});
+    try {
+      updateInvoice(updatedInvoice);
+      setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
+        relationshipIdsEqual(currentInvoice.id, updatedInvoice.id) ? updatedInvoice : currentInvoice
+      ));
+      createPaymentReceipt(updatedInvoice, newPayment);
+      setPayment({ amount: "", method: "Cash", reference: "", date: new Date().toISOString().split("T")[0] });
+      showToast({ type: "success", title: "Payment recorded", message: "Payment recorded successfully" });
+    } finally {
+      paymentSubmissionInProgress.current = false;
+      setIsSavingPayment(false);
+    }
   }
 
   function startEditingPayment(recordedPayment) {
@@ -141,38 +127,31 @@ showToast({
   }
 
   function saveEditedPayment() {
-    const amount = Number(editingPayment?.amount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      showToast({
-        type: "error",
-        title: "Invalid payment amount",
-        message: "Enter a valid payment amount.",
-      });
-      return;
-    }
-
-    const maximumAmount = getMaximumEditablePaymentAmount(
+    const validation = validateInvoicePayment({
       invoice,
-      editingPayment.id,
-    );
-
-    if (roundCurrencyAmount(amount) > maximumAmount) {
+      value: editingPayment?.amount,
+      date: editingPayment?.date,
+      editingPaymentId: editingPayment?.id,
+    });
+    if (!validation.valid) {
       showToast({
         type: "error",
-        title: "Payment exceeds invoice total",
-        message: `The maximum amount allowed for this payment is ${formatCurrency(maximumAmount)}.`,
+        title: "Payment rejected",
+        message: validation.maximumAmount !== undefined
+          ? `The maximum amount allowed for this payment is ${formatCurrency(validation.maximumAmount)}.`
+          : validation.message,
       });
       return;
     }
 
-    const updatedInvoice = recalculateInvoicePaymentState({
+    let updatedInvoice = recalculateInvoicePaymentState({
       ...invoice,
       paymentHistoryVersion: 1,
       payments: invoicePayments.map((recordedPayment) =>
-        recordedPayment.id === editingPayment.id
+        relationshipIdsEqual(recordedPayment.id, editingPayment.id)
           ? {
               ...recordedPayment,
-              amount: roundCurrencyAmount(amount),
+              amount: validation.amount,
               method: editingPayment.method,
               reference: editingPayment.reference,
               date: editingPayment.date,
@@ -181,13 +160,18 @@ showToast({
       ),
     });
 
+    updatedInvoice = applyPaidInventoryTransition(
+      updatedInvoice,
+      deductInventoryFromInvoice,
+    ).invoice;
+
     updateInvoice(updatedInvoice);
     const savedPayment = updatedInvoice.payments.find(
-      (recordedPayment) => recordedPayment.id === editingPayment.id
+      (recordedPayment) => relationshipIdsEqual(recordedPayment.id, editingPayment.id)
     );
     updateReceiptForPayment(updatedInvoice.id, savedPayment);
     setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
-      currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
+      relationshipIdsEqual(currentInvoice.id, updatedInvoice.id) ? updatedInvoice : currentInvoice
     ));
     setEditingPayment(null);
     showToast({
@@ -204,14 +188,14 @@ showToast({
       ...invoice,
       paymentHistoryVersion: 1,
       payments: invoicePayments.filter(
-        (recordedPayment) => recordedPayment.id !== paymentToDelete.id
+        (recordedPayment) => !relationshipIdsEqual(recordedPayment.id, paymentToDelete.id)
       ),
     });
 
     updateInvoice(updatedInvoice);
     deleteReceiptForPayment(updatedInvoice.id, paymentToDelete.id);
     setInvoices((currentInvoices) => currentInvoices.map((currentInvoice) =>
-      currentInvoice.id === updatedInvoice.id ? updatedInvoice : currentInvoice
+      relationshipIdsEqual(currentInvoice.id, updatedInvoice.id) ? updatedInvoice : currentInvoice
     ));
     setPaymentToDelete(null);
     showToast({
@@ -222,14 +206,15 @@ showToast({
   }
 
   function handleDelete() {
-    const remainingInvoices = deleteInvoice(invoice.id);
-    setInvoices(remainingInvoices);
-    showToast({
-      type: "success",
-      title: "Invoice deleted",
-      message: "Invoice deleted successfully",
-    });
-    navigate("/invoices");
+    try {
+      const remainingInvoices = deleteInvoice(invoice.id);
+      setInvoices(remainingInvoices);
+      showToast({ type: "success", title: "Invoice deleted", message: "Invoice deleted successfully" });
+      navigate("/invoices");
+    } catch (error) {
+      setIsDeleteOpen(false);
+      showToast({ type: "warning", title: "Invoice history protected", message: error.message });
+    }
   }
 
   if (!invoice) {
@@ -295,7 +280,7 @@ showToast({
             </p>
 
             <span className="inline-block mt-3 px-4 py-2 rounded-full bg-blue-100 text-blue-700 font-semibold">
-              {invoice.status}
+              {invoiceStatus}
             </span>
 
             <div className="no-print mt-5 flex flex-wrap justify-start gap-2 lg:justify-end">
@@ -338,7 +323,7 @@ showToast({
             </p>
 
             <h3 className="font-bold text-xl mt-2">
-              {invoice.client}
+              {invoice.clientNameSnapshot || invoice.client || "Not linked"}
             </h3>
 
           </div>
@@ -350,7 +335,7 @@ showToast({
             </p>
 
             <h3 className="font-bold text-xl mt-2">
-              {invoice.project}
+              {invoice.projectNameSnapshot || invoice.project || "—"}
             </h3>
 
           </div>
@@ -374,7 +359,7 @@ showToast({
             </p>
 
             <h3 className="font-bold text-xl mt-2">
-              {invoice.status}
+              {invoiceStatus}
             </h3>
 
           </div>
@@ -415,24 +400,26 @@ showToast({
 
           <tbody>
 
-            {invoice.materials?.map((item) => (
+            {(Array.isArray(invoice.materials) ? invoice.materials : []).filter(Boolean).map((item, itemIndex) => (
 
-              <tr key={item.id}>
+              <tr key={item.id ?? `legacy-item-${itemIndex}`}>
 
                 <td className="border p-3">
-                  {item.description}
+                  {item.description || item.name || "—"}
                 </td>
 
                 <td className="border p-3 text-center">
-                  {item.quantity}
+                  {Number.isFinite(Number(item.quantity)) ? Number(item.quantity) : 0}
                 </td>
 
                 <td className="border p-3 text-right">
-                  {formatCurrency(item.price)}
+                  {formatCurrency(safeDocumentAmount(item.price))}
                 </td>
 
                 <td className="border p-3 text-right">
-                  {formatCurrency(Number(item.price) * Number(item.quantity))}
+                  {formatCurrency(Number.isFinite(Number(item.price) * Number(item.quantity))
+                    ? Number(item.price) * Number(item.quantity)
+                    : 0)}
                 </td>
 
               </tr>
@@ -451,21 +438,21 @@ showToast({
             <div className="flex justify-between py-2">
               <span>Labour</span>
               <span>
-                {formatCurrency(invoice.labour)}
+                {formatCurrency(safeDocumentAmount(invoice.labour))}
               </span>
             </div>
 
             <div className="flex justify-between py-2">
               <span>Transport</span>
               <span>
-                {formatCurrency(invoice.transport)}
+                {formatCurrency(safeDocumentAmount(invoice.transport))}
               </span>
             </div>
 
             <div className="flex justify-between py-2">
               <span>Discount</span>
               <span>
-                -{formatCurrency(invoice.discount)}
+                -{formatCurrency(Math.max(0, safeDocumentAmount(invoice.discount)))}
               </span>
             </div>
 
@@ -492,7 +479,7 @@ showToast({
               <span>Grand Total</span>
 
               <span>
-                {formatCurrency(invoice.total)}
+                {formatCurrency(Math.max(0, safeDocumentAmount(invoice.total)))}
               </span>
 
             </div>
@@ -503,7 +490,7 @@ showToast({
 
         {/* Record Payment */}
 
-        <div className="no-print mb-10 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
+        {remainingBalance > 0 ? <div className="no-print mb-10 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-6">
 
           <h2 className="text-2xl font-bold mb-6">
             Record Payment
@@ -572,12 +559,15 @@ showToast({
 
           <button
             onClick={savePayment}
+            disabled={isSavingPayment}
             className="mt-6 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg"
           >
-            Record Payment
+            {isSavingPayment ? "Saving..." : "Record Payment"}
           </button>
 
-        </div>
+        </div> : <div className="no-print mb-10 rounded-xl border border-emerald-200 bg-emerald-50 p-4 font-semibold text-emerald-800">
+          Paid in full. No further payment is required.
+        </div>}
 
         {/* Payment History */}
 
@@ -628,9 +618,9 @@ showToast({
 
               <tbody>
 
-                {invoicePayments.map((pay) => (
+                {invoicePayments.map((pay, paymentIndex) => (
 
-                  <tr key={pay.id}>
+                  <tr key={hasRelationshipId(pay.id) ? `${typeof pay.id}:${String(pay.id)}` : `legacy-payment-${paymentIndex}`}>
 
                     <td className="border-b border-slate-100 p-3">
                       {pay.date}
@@ -645,11 +635,11 @@ showToast({
                     </td>
 
                     <td className="border-b border-slate-100 p-3 text-right font-semibold text-emerald-700">
-                      {formatCurrency(pay.amount)}
+                      {formatCurrency(Math.max(0, safeDocumentAmount(pay.amount)))}
                     </td>
 
                     <td className="border-b border-slate-100 p-3">
-                      <div className="flex flex-wrap justify-end gap-2">
+                      {hasRelationshipId(pay.id) ? <div className="flex flex-wrap justify-end gap-2">
                         <Button
                           variant="secondary"
                           className="min-h-9 px-3 py-1 text-sm"
@@ -664,7 +654,7 @@ showToast({
                         >
                           Delete
                         </Button>
-                      </div>
+                      </div> : <span className="text-sm text-slate-500">Legacy record</span>}
                     </td>
 
                   </tr>

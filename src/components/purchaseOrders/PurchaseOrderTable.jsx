@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
 import { useToast } from "../../context/ToastContext";
 import Card from "../common/Card";
@@ -6,8 +7,10 @@ import Button from "../common/Button";
 import ConfirmDialog from "../common/ConfirmDialog";
 import EmptyPurchaseOrders from "./EmptyPurchaseOrders";
 import { formatCurrency } from "../../utils/currency";
+import { getFinancialRouteToken } from "../../utils/financialIdentity";
 
-function PurchaseOrderTable({ search, status, setOrderToEdit, onViewOrder }) {
+function PurchaseOrderTable({ search, status, setOrderToEdit }) {
+  const navigate = useNavigate();
   const {
     purchaseOrders,
     suppliers,
@@ -59,6 +62,11 @@ function PurchaseOrderTable({ search, status, setOrderToEdit, onViewOrder }) {
     );
   }
 
+  function handleView(order) {
+    const routeToken = getFinancialRouteToken(order);
+    if (routeToken) navigate(`/purchase-orders/${routeToken}`);
+  }
+
   return (
     <>
       <Card>
@@ -86,7 +94,7 @@ function PurchaseOrderTable({ search, status, setOrderToEdit, onViewOrder }) {
                   );
 
                   return (
-                    <tr key={order.id} className="border-b border-slate-100">
+                    <tr key={getFinancialRouteToken(order) || order.orderNumber} className="border-b border-slate-100">
                       <td className="p-3">{order.orderNumber}</td>
                       <td className="p-3">{supplier?.company || "—"}</td>
                       <td className="p-3">{order.date}</td>
@@ -105,7 +113,7 @@ function PurchaseOrderTable({ search, status, setOrderToEdit, onViewOrder }) {
                       <td className="p-3 text-right">{formatCurrency(order.total)}</td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-2">
-                          <Button variant="secondary" onClick={() => onViewOrder(order)}>
+                          <Button variant="secondary" onClick={() => handleView(order)}>
                             View
                           </Button>
                           <Button variant="warning" onClick={() => setOrderToEdit(order)}>

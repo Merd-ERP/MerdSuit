@@ -1,4 +1,13 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import {
+  appendUniqueInventoryMovements,
+  createInventoryMovement,
+  createInvoiceMovementId,
+  createManualMovementId,
+  createPurchaseOrderMovementId,
+  persistInventoryMovements,
+  readInventoryMovements,
+} from "../utils/inventoryMovements";
 
 const AppContext = createContext();
 
@@ -25,6 +34,10 @@ export function AppProvider({ children }) {
 
   const [inventory, setInventory] = useState(
     () => JSON.parse(localStorage.getItem("inventory")) || []
+  );
+
+  const [inventoryMovements, setInventoryMovements] = useState(
+    () => readInventoryMovements()
   );
 
   const [suppliers, setSuppliers] = useState(
@@ -68,6 +81,10 @@ export function AppProvider({ children }) {
   }, [inventory]);
 
   useEffect(() => {
+    persistInventoryMovements(inventoryMovements);
+  }, [inventoryMovements]);
+
+  useEffect(() => {
     localStorage.setItem("suppliers", JSON.stringify(suppliers));
   }, [suppliers]);
 
@@ -106,56 +123,130 @@ export function AppProvider({ children }) {
     );
   }
 
-  function stockIn(id, quantity) {
-    setInventory((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity:
-                Number(item.quantity) + Number(quantity),
-            }
-          : item
-      )
+  function recordInventoryMovements(movements) {
+    const nextMovements = appendUniqueInventoryMovements(
+      readInventoryMovements(),
+      movements,
     );
+    persistInventoryMovements(nextMovements);
+    setInventoryMovements(nextMovements);
+    return nextMovements;
   }
 
-  function stockOut(id, quantity) {
-    setInventory((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              quantity: Math.max(
-                0,
-                Number(item.quantity) - Number(quantity)
-              ),
-            }
-          : item
-      )
+  function updateStockWithMovement(id, quantity, type, details = {}) {
+    let storedInventory;
+    try {
+      const parsedInventory = JSON.parse(localStorage.getItem("inventory"));
+      storedInventory = Array.isArray(parsedInventory) ? parsedInventory : inventory;
+    } catch {
+      storedInventory = inventory;
+    }
+    const inventoryItem = storedInventory.find((item) => String(item.id) === String(id));
+    const movementQuantity = Number(quantity);
+
+    if (!inventoryItem || !Number.isFinite(movementQuantity) || movementQuantity <= 0) {
+      return { success: false, message: "Choose an item and enter a positive quantity." };
+    }
+
+    const currentQuantity = Number(inventoryItem.quantity) || 0;
+    if (type === "Stock Out" && movementQuantity > currentQuantity) {
+      return { success: false, message: "Stock out quantity cannot exceed the available quantity." };
+    }
+
+    const resultingQuantity = type === "Stock In"
+      ? currentQuantity + movementQuantity
+      : Math.max(0, currentQuantity - movementQuantity);
+    const nextInventory = storedInventory.map((item) =>
+      String(item.id) === String(id)
+        ? { ...item, quantity: resultingQuantity }
+        : item
     );
+    const movement = createInventoryMovement({
+      id: createManualMovementId(inventoryItem.id),
+      inventoryItem,
+      type,
+      quantity: movementQuantity,
+      occurredAt: details.date
+        ? `${details.date}T${new Date().toTimeString().slice(0, 8)}`
+        : new Date().toISOString(),
+      sourceType: details.sourceType || "Manual",
+      sourceId: details.sourceId ?? null,
+      sourceReference: details.sourceReference
+        || details.supplier
+        || details.reason
+        || "Manual adjustment",
+      resultingQuantity,
+      notes: details.notes || "",
+    });
+
+    localStorage.setItem("inventory", JSON.stringify(nextInventory));
+    recordInventoryMovements([movement]);
+    setInventory(nextInventory);
+    return { success: true, movement };
   }
-  function deductInventoryFromInvoice(materials) {
-  setInventory((prev) =>
-    prev.map((inventoryItem) => {
-      const soldItem = materials.find(
+
+  function stockIn(id, quantity, details = {}) {
+    return updateStockWithMovement(id, quantity, "Stock In", details);
+  }
+
+  function stockOut(id, quantity, details = {}) {
+    return updateStockWithMovement(id, quantity, "Stock Out", details);
+  }
+  function deductInventoryFromInvoice(materials, invoice = {}, occurredAt = new Date().toISOString()) {
+  const invoiceMaterials = Array.isArray(materials) ? materials : [];
+  setInventory((prev) => {
+    const invoiceIdentity = invoice.id ?? invoice.invoiceNumber;
+    const canRecordMovement = invoiceIdentity !== undefined
+      && invoiceIdentity !== null
+      && invoiceIdentity !== "";
+    const movements = [];
+    const nextInventory = prev.map((inventoryItem) => {
+      const soldItem = invoiceMaterials.find(
         (material) =>
-          material.description.trim().toLowerCase() ===
-          inventoryItem.name.trim().toLowerCase()
+          String(material?.description || "").trim().toLowerCase() ===
+          String(inventoryItem?.name || "").trim().toLowerCase()
       );
 
       if (!soldItem) return inventoryItem;
 
+      const currentQuantity = Number(inventoryItem.quantity);
+      const soldQuantity = Number.isFinite(Number(soldItem.quantity))
+        ? Number(soldItem.quantity)
+        : 0;
+      const resultingQuantity = Math.max(0, currentQuantity - soldQuantity);
+      const deductedQuantity = currentQuantity - resultingQuantity;
+
+      if (
+        canRecordMovement
+        && inventoryItem.id !== undefined
+        && inventoryItem.id !== null
+        && inventoryItem.id !== ""
+        && Number.isFinite(deductedQuantity)
+        && deductedQuantity > 0
+      ) {
+        movements.push(createInventoryMovement({
+          id: createInvoiceMovementId(invoiceIdentity, inventoryItem.id),
+          inventoryItem,
+          type: "Stock Out",
+          quantity: deductedQuantity,
+          occurredAt,
+          sourceType: "Invoice",
+          sourceId: invoice.id ?? null,
+          sourceReference: invoice.invoiceNumber || String(invoiceIdentity),
+          resultingQuantity,
+          notes: `Deducted for invoice ${invoice.invoiceNumber || invoiceIdentity}`,
+        }));
+      }
+
       return {
         ...inventoryItem,
-        quantity: Math.max(
-          0,
-          Number(inventoryItem.quantity) -
-            Number(soldItem.quantity)
-        ),
+        quantity: resultingQuantity,
       };
-    })
-  );
+    });
+    localStorage.setItem("inventory", JSON.stringify(nextInventory));
+    if (movements.length > 0) recordInventoryMovements(movements);
+    return nextInventory;
+  });
 }
 
   // ===========================
@@ -258,13 +349,37 @@ export function AppProvider({ children }) {
         ? { ...purchaseOrder, status: "Received" }
         : purchaseOrder,
     );
+    const occurredAt = new Date().toISOString();
+    const purchaseOrderMovements = nextInventory.flatMap((inventoryItem) => {
+      const receivedQuantity = additions.get(String(inventoryItem.id));
+      if (receivedQuantity === undefined) return [];
+
+      return [createInventoryMovement({
+        id: createPurchaseOrderMovementId(order.id, inventoryItem.id),
+        inventoryItem,
+        type: "Stock In",
+        quantity: receivedQuantity,
+        occurredAt,
+        sourceType: "Purchase Order",
+        sourceId: order.id,
+        sourceReference: order.orderNumber || String(order.id),
+        resultingQuantity: inventoryItem.quantity,
+        notes: `Received from purchase order ${order.orderNumber || order.id}`,
+      })];
+    });
+    const nextInventoryMovements = appendUniqueInventoryMovements(
+      readInventoryMovements(),
+      purchaseOrderMovements,
+    );
 
     // Persist both sides of the receipt transaction immediately using the
     // same keys already used by the context persistence effects.
     localStorage.setItem("inventory", JSON.stringify(nextInventory));
     localStorage.setItem("purchaseOrders", JSON.stringify(nextPurchaseOrders));
+    persistInventoryMovements(nextInventoryMovements);
     setInventory(nextInventory);
     setPurchaseOrders(nextPurchaseOrders);
+    setInventoryMovements(nextInventoryMovements);
 
     return { success: true };
   }
@@ -312,6 +427,7 @@ function deleteExpense(id) {
 
         // Inventory
         inventory,
+        inventoryMovements,
         setInventory,
         addInventoryItem,
         updateInventoryItem,

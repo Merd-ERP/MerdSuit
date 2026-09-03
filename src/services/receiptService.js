@@ -1,4 +1,7 @@
+import { hasRelationshipId, relationshipIdsEqual } from "../utils/financialIdentity";
+
 const STORAGE_KEY = "receipts";
+const COUNTER_KEY = "receiptNumberCounter";
 
 export function getReceipts() {
   return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
@@ -17,7 +20,7 @@ export function saveReceipt(receipt) {
 
 export function updateReceipt(updatedReceipt) {
   const receipts = getReceipts().map((receipt) =>
-    receipt.id === updatedReceipt.id
+    relationshipIdsEqual(receipt.id, updatedReceipt.id)
       ? updatedReceipt
       : receipt
   );
@@ -29,38 +32,23 @@ export function updateReceipt(updatedReceipt) {
 }
 
 export function deleteReceipt(id) {
-  const receipts = getReceipts().filter(
-    (receipt) => receipt.id !== id
-  );
-
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify(receipts)
-  );
+  if (!hasRelationshipId(id)) return false;
+  throw new Error("Issued receipts cannot be deleted independently. Delete the linked payment instead.");
 }
 
-export function generateReceiptNumber() {
-  const receipts = getReceipts();
+export function generateReceiptNumber(receipts = getReceipts()) {
+  const highestStoredSequence = receipts.reduce((highest, receipt) => {
+    const match = /^RCT-(?:\d{4}-)?(\d+)$/i.exec(String(receipt.receiptNumber || "").trim());
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+  const storedCounter = Number(localStorage.getItem(COUNTER_KEY));
+  const nextNumber = Math.max(
+    highestStoredSequence,
+    Number.isFinite(storedCounter) && storedCounter >= 0 ? storedCounter : 0
+  ) + 1;
 
-  const year = new Date().getFullYear();
-
-  if (receipts.length === 0) {
-    return `RCT-${year}-00001`;
-  }
-
-  const lastReceipt =
-    receipts[receipts.length - 1];
-
-  const lastPart =
-    lastReceipt.receiptNumber.split("-").pop();
-
-  const nextNumber =
-    Number(lastPart) + 1;
-
-  return `RCT-${year}-${String(nextNumber).padStart(
-    5,
-    "0"
-  )}`;
+  localStorage.setItem(COUNTER_KEY, String(nextNumber));
+  return `RCT-${new Date().getFullYear()}-${String(nextNumber).padStart(5, "0")}`;
 }
 
 export function updateReceiptForPayment(invoiceId, payment) {
@@ -68,10 +56,9 @@ export function updateReceiptForPayment(invoiceId, payment) {
 
   let updated = false;
   const receipts = getReceipts().map((receipt) => {
-    const isMatchingReceipt = receipt.paymentId !== undefined
-      && receipt.paymentId !== null
-      && String(receipt.paymentId) === String(payment.id)
-      && String(receipt.invoiceId) === String(invoiceId);
+    const isMatchingReceipt = hasRelationshipId(receipt.paymentId)
+      && relationshipIdsEqual(receipt.paymentId, payment.id)
+      && relationshipIdsEqual(receipt.invoiceId, invoiceId);
 
     if (!isMatchingReceipt) return receipt;
 
@@ -97,10 +84,9 @@ export function deleteReceiptForPayment(invoiceId, paymentId) {
 
   const receipts = getReceipts();
   const remainingReceipts = receipts.filter((receipt) => {
-    const isMatchingReceipt = receipt.paymentId !== undefined
-      && receipt.paymentId !== null
-      && String(receipt.paymentId) === String(paymentId)
-      && String(receipt.invoiceId) === String(invoiceId);
+    const isMatchingReceipt = hasRelationshipId(receipt.paymentId)
+      && relationshipIdsEqual(receipt.paymentId, paymentId)
+      && relationshipIdsEqual(receipt.invoiceId, invoiceId);
 
     return !isMatchingReceipt;
   });

@@ -11,7 +11,10 @@ export const money = (value) => formatCurrency(value, {
   maximumFractionDigits: 2,
 });
 
-const numeric = (value) => (Number(value) || 0).toFixed(2);
+const numeric = (value) => {
+  const amount = Number(value);
+  return (Number.isFinite(amount) ? amount : 0).toFixed(2);
+};
 
 export function inPeriod(date, period) {
   if (period === "All Time") return true;
