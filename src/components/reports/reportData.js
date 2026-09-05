@@ -1,10 +1,14 @@
 import { getInvoices } from "../../services/invoiceService";
 import { formatCurrency } from "../../utils/currency";
 import {
-  getInvoiceBalance,
-  getInvoicePaymentRows,
   getInvoicePaymentStatus,
 } from "../../utils/invoicePayments";
+import {
+  getNormalizedPaymentRows,
+  getOutstandingBalance,
+  getReceivedRevenue,
+  safeRecordArray,
+} from "../../utils/financialMetrics.js";
 
 export const money = (value) => formatCurrency(value, {
   minimumFractionDigits: 2,
@@ -34,34 +38,24 @@ export function inPeriod(date, period) {
     && value.getMonth() === target.getMonth();
 }
 
-const getPayments = (invoices) => invoices.flatMap(getInvoicePaymentRows);
-
 export function getReportMetrics(period, expenses = []) {
-  const allInvoices = getInvoices();
-  const periodInvoices = allInvoices.filter((invoice) => inPeriod(invoice.date, period));
-  const periodPayments = getPayments(allInvoices).filter((payment) => inPeriod(payment.date, period));
-  const filteredExpenses = expenses.filter((expense) => inPeriod(expense.date, period));
+  const allInvoices = safeRecordArray(getInvoices());
+  const filteredExpenses = safeRecordArray(expenses).filter((expense) => inPeriod(expense.date, period));
 
-  const revenue = periodPayments.reduce(
-    (sum, payment) => sum + (Number(payment.amount) || 0),
-    0,
-  );
+  const revenue = getReceivedRevenue(allInvoices, (payment) => inPeriod(payment.date, period));
   const totalExpenses = filteredExpenses.reduce(
     (sum, expense) => sum + (Number(expense.amount) || 0),
     0,
   );
-  const outstanding = periodInvoices.reduce(
-    (sum, invoice) => sum + getInvoiceBalance(invoice),
-    0,
-  );
+  const outstanding = getOutstandingBalance(allInvoices, (invoice) => inPeriod(invoice.date, period));
 
   return { revenue, totalExpenses, outstanding, profit: revenue - totalExpenses };
 }
 
 export function getReportData(tab, period, { expenses = [], inventory = [] }) {
-  const allInvoices = getInvoices();
+  const allInvoices = safeRecordArray(getInvoices());
   const invoices = allInvoices.filter((invoice) => inPeriod(invoice.date, period));
-  const payments = getPayments(allInvoices).filter((payment) => inPeriod(payment.date, period));
+  const payments = getNormalizedPaymentRows(allInvoices).filter((payment) => inPeriod(payment.date, period));
 
   if (tab === "sales") {
     const rawRows = payments.map((payment) => [
@@ -84,7 +78,7 @@ export function getReportData(tab, period, { expenses = [], inventory = [] }) {
       invoice.invoiceNumber || "",
       invoice.client || "",
       invoice.dueDate || "",
-      numeric(getInvoiceBalance(invoice)),
+      numeric(getOutstandingBalance([invoice])),
       getInvoicePaymentStatus(invoice),
     ]);
     return {
@@ -112,7 +106,7 @@ export function getReportData(tab, period, { expenses = [], inventory = [] }) {
   }
 
   if (tab === "expenses") {
-    const rawRows = expenses
+    const rawRows = safeRecordArray(expenses)
       .filter((expense) => inPeriod(expense.date, period))
       .map((expense) => [
         expense.date || "",
@@ -128,7 +122,7 @@ export function getReportData(tab, period, { expenses = [], inventory = [] }) {
     };
   }
 
-  const rawRows = inventory.map((item) => {
+  const rawRows = safeRecordArray(inventory).map((item) => {
     const quantity = Number(item.quantity) || 0;
     const unitCost = Number(item.costPrice) || 0;
     return [item.name || "", String(quantity), numeric(unitCost), numeric(quantity * unitCost)];

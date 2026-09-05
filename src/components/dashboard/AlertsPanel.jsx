@@ -1,20 +1,17 @@
 import { useApp } from "../../context/AppContext";
 import Card from "../common/Card";
 import { getInvoiceBalance } from "../../utils/invoicePayments";
+import { safeRecordArray } from "../../utils/financialMetrics.js";
+import { getLowStockCount } from "./dashboardAnalytics.js";
 
 function AlertsPanel() {
-  const { inventory, invoices, projects } = useApp();
-  const lowStockCount = inventory.filter(
-    (item) => Number(item.quantity) <= Number(item.minimumStock)
-  ).length;
-  const outstandingCount = invoices.filter((invoice) => getInvoiceBalance(invoice) > 0).length;
-  const nearingCompletionCount = projects.filter(
-    (project) => project.status === "Nearing Completion"
-  ).length;
+  const { inventory, invoices } = useApp();
+  const lowStockCount = getLowStockCount(inventory);
+  const outstandingCount = safeRecordArray(invoices)
+    .filter((invoice) => getInvoiceBalance(invoice) > 0).length;
   const alerts = [
     lowStockCount > 0 && `${lowStockCount} low stock item${lowStockCount === 1 ? "" : "s"} need attention.`,
-    outstandingCount > 0 && `${outstandingCount} outstanding invoice${outstandingCount === 1 ? "" : "s"} need follow-up.`,
-    nearingCompletionCount > 0 && `${nearingCompletionCount} project${nearingCompletionCount === 1 ? " is" : "s are"} nearing completion.`,
+    outstandingCount > 0 && `${outstandingCount} outstanding invoice${outstandingCount === 1 ? " needs" : "s need"} follow-up.`,
   ].filter(Boolean);
 
   return (
