@@ -5,6 +5,7 @@ import {
 } from "../utils/invoicePayments";
 import { getReceipts } from "./receiptService";
 import { hasRelationshipId, relationshipIdsEqual } from "../utils/financialIdentity";
+import { normalizeDocumentPrefix, readCompanySettings } from "../utils/companySettings";
 
 const STORAGE_KEY = "invoices";
 const COUNTER_KEY = "invoiceNumberCounter";
@@ -93,7 +94,7 @@ export function generateInvoiceNumber(invoices = getInvoices()) {
     ...getReceipts().map((receipt) => receipt.invoiceNumber),
   ];
   const highestStoredSequence = historicalNumbers.reduce((highest, invoiceNumber) => {
-    const match = /^INV-(?:\d{4}-)?(\d+)$/i.exec(String(invoiceNumber || "").trim());
+    const match = /^[A-Z][A-Z0-9-]{1,9}-(?:\d{4}-)?(\d+)$/i.exec(String(invoiceNumber || "").trim());
     return match ? Math.max(highest, Number(match[1])) : highest;
   }, 0);
   const storedCounter = Number(localStorage.getItem(COUNTER_KEY));
@@ -103,5 +104,6 @@ export function generateInvoiceNumber(invoices = getInvoices()) {
   ) + 1;
 
   localStorage.setItem(COUNTER_KEY, String(nextNumber));
-  return `INV-${new Date().getFullYear()}-${String(nextNumber).padStart(5, "0")}`;
+  const prefix = normalizeDocumentPrefix(readCompanySettings().invoicePrefix, "INV");
+  return `${prefix}-${new Date().getFullYear()}-${String(nextNumber).padStart(5, "0")}`;
 }

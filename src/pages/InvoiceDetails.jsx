@@ -32,6 +32,7 @@ import {
   relationshipIdsEqual,
   resolveFinancialRoute,
 } from "../utils/financialIdentity";
+import { normalizeCompanySettings, readCompanySettings } from "../utils/companySettings";
 
 const safeDocumentAmount = (value) => {
   const amount = Number(value);
@@ -58,8 +59,11 @@ function InvoiceDetails() {
   const invoicePayments = getInvoicePayments(invoice).filter(Boolean);
   const invoiceStatus = getInvoicePaymentStatus(invoice);
 
-  const company =
-    JSON.parse(localStorage.getItem("company")) || {};
+  const company = invoice?.companySnapshot
+    ? normalizeCompanySettings(invoice.companySnapshot)
+    : readCompanySettings();
+  const documentCurrency = invoice?.currency || company.currency;
+  const formatDocumentCurrency = (value) => formatCurrency(value, { currency: documentCurrency });
 
   const [payment, setPayment] = useState({
     amount: "",
@@ -73,7 +77,7 @@ function InvoiceDetails() {
     const validation = validateInvoicePayment({ invoice, value: payment.amount, date: payment.date });
     if (!validation.valid) {
       showToast({ type: "error", title: "Payment rejected", message: validation.maximumAmount !== undefined
-        ? `The maximum payment allowed is ${formatCurrency(validation.maximumAmount)}.`
+        ? `The maximum payment allowed is ${formatDocumentCurrency(validation.maximumAmount)}.`
         : validation.message });
       return;
     }
@@ -138,7 +142,7 @@ function InvoiceDetails() {
         type: "error",
         title: "Payment rejected",
         message: validation.maximumAmount !== undefined
-          ? `The maximum amount allowed for this payment is ${formatCurrency(validation.maximumAmount)}.`
+          ? `The maximum amount allowed for this payment is ${formatDocumentCurrency(validation.maximumAmount)}.`
           : validation.message,
       });
       return;
@@ -413,11 +417,11 @@ function InvoiceDetails() {
                 </td>
 
                 <td className="border p-3 text-right">
-                  {formatCurrency(safeDocumentAmount(item.price))}
+                  {formatDocumentCurrency(safeDocumentAmount(item.price))}
                 </td>
 
                 <td className="border p-3 text-right">
-                  {formatCurrency(Number.isFinite(Number(item.price) * Number(item.quantity))
+                  {formatDocumentCurrency(Number.isFinite(Number(item.price) * Number(item.quantity))
                     ? Number(item.price) * Number(item.quantity)
                     : 0)}
                 </td>
@@ -438,21 +442,21 @@ function InvoiceDetails() {
             <div className="flex justify-between py-2">
               <span>Labour</span>
               <span>
-                {formatCurrency(safeDocumentAmount(invoice.labour))}
+                {formatDocumentCurrency(safeDocumentAmount(invoice.labour))}
               </span>
             </div>
 
             <div className="flex justify-between py-2">
               <span>Transport</span>
               <span>
-                {formatCurrency(safeDocumentAmount(invoice.transport))}
+                {formatDocumentCurrency(safeDocumentAmount(invoice.transport))}
               </span>
             </div>
 
             <div className="flex justify-between py-2">
               <span>Discount</span>
               <span>
-                -{formatCurrency(Math.max(0, safeDocumentAmount(invoice.discount)))}
+                -{formatDocumentCurrency(Math.max(0, safeDocumentAmount(invoice.discount)))}
               </span>
             </div>
 
@@ -461,14 +465,14 @@ function InvoiceDetails() {
             <div className="flex justify-between font-semibold">
               <span>Total Paid</span>
               <span>
-                {formatCurrency(currentAmountPaid)}
+                {formatDocumentCurrency(currentAmountPaid)}
               </span>
             </div>
 
             <div className="flex justify-between font-semibold mt-2">
               <span>Balance</span>
               <span className="text-red-600">
-                {formatCurrency(remainingBalance)}
+                {formatDocumentCurrency(remainingBalance)}
               </span>
             </div>
 
@@ -479,7 +483,7 @@ function InvoiceDetails() {
               <span>Grand Total</span>
 
               <span>
-                {formatCurrency(Math.max(0, safeDocumentAmount(invoice.total)))}
+                {formatDocumentCurrency(Math.max(0, safeDocumentAmount(invoice.total)))}
               </span>
 
             </div>
@@ -635,7 +639,7 @@ function InvoiceDetails() {
                     </td>
 
                     <td className="border-b border-slate-100 p-3 text-right font-semibold text-emerald-700">
-                      {formatCurrency(Math.max(0, safeDocumentAmount(pay.amount)))}
+                      {formatDocumentCurrency(Math.max(0, safeDocumentAmount(pay.amount)))}
                     </td>
 
                     <td className="border-b border-slate-100 p-3">
@@ -757,7 +761,7 @@ function InvoiceDetails() {
       <ConfirmDialog
         isOpen={Boolean(paymentToDelete)}
         title="Delete Payment?"
-        message={`Are you sure you want to delete this ${paymentToDelete ? formatCurrency(paymentToDelete.amount) : ""} payment? This action cannot be undone.`}
+        message={`Are you sure you want to delete this ${paymentToDelete ? formatDocumentCurrency(paymentToDelete.amount) : ""} payment? This action cannot be undone.`}
         onCancel={() => setPaymentToDelete(null)}
         onConfirm={deletePayment}
         confirmLabel="Delete Payment"

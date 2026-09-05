@@ -4,6 +4,7 @@ import { generateQuotationNumber } from "../../services/quotationService.js";
 import Button from "../common/Button";
 import { validateAndNormalizeQuotationValues } from "../../utils/quotationItems";
 import { isArchivedRecord, relationshipIdsEqual, resolveClient, resolveProject } from "../../utils/relationships";
+import { getCompanySnapshot } from "../../utils/companySettings";
 
 function SaveQuotationButton({
   quotation,
@@ -74,6 +75,7 @@ function SaveQuotationButton({
 
     const quotationNumber = editingQuotation?.quotationNumber || generateQuotationNumber(quotations);
 
+    const companySnapshot = asDraft ? editingQuotation?.companySnapshot : getCompanySnapshot();
     const savedQuotation = {
       ...(editingQuotation || {}),
       id: editingQuotation?.id ?? Date.now(),
@@ -91,6 +93,8 @@ function SaveQuotationButton({
       discount: validation.discount,
       total: validation.total,
       status: asDraft ? "Draft" : "Pending",
+      companySnapshot,
+      currency: asDraft ? editingQuotation?.currency || "" : companySnapshot.currency,
       createdAt: editingQuotation?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

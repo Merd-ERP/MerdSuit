@@ -30,7 +30,10 @@ export async function generateQuotationPDF(quotation) {
   const doc = createPDF();
   await registerPdfFont(doc);
 
-  addCompanyHeader(doc);
+  const company = quotation.companySnapshot || undefined;
+  const currency = quotation.currency || company?.currency;
+  const formatDocumentCurrency = (value) => formatCurrency(value, { currency });
+  addCompanyHeader(doc, company);
 
   doc.setFont(pdfFontName, "bold");
   doc.setFontSize(18);
@@ -72,8 +75,8 @@ export async function generateQuotationPDF(quotation) {
  body: validation.materials.map((item) => [
   item.description,
   item.quantity,
-  formatCurrency(item.price),
-  formatCurrency(item.quantity * item.price),
+  formatDocumentCurrency(item.price),
+  formatDocumentCurrency(item.quantity * item.price),
 ]),
     styles: { font: pdfFontName },
     headStyles: { font: pdfFontName, fontStyle: "bold" },
@@ -90,13 +93,13 @@ export async function generateQuotationPDF(quotation) {
   ];
   rows.forEach(([label, amount]) => {
     doc.text(label, 135, finalY);
-    doc.text(formatCurrency(amount), 195, finalY, { align: "right" });
+    doc.text(formatDocumentCurrency(amount), 195, finalY, { align: "right" });
     finalY += 7;
   });
 
   doc.setFont(pdfFontName, "bold");
   doc.text(
-    `Grand Total: ${formatCurrency(validation.total)}`,
+    `Grand Total: ${formatDocumentCurrency(validation.total)}`,
     195,
     finalY,
     {

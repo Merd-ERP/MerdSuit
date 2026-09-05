@@ -7,6 +7,7 @@ import { getQuotations } from "./quotationService.js";
 import { hasRelationshipId, relationshipIdsEqual } from "../utils/relationships";
 import { validateAndNormalizeQuotationValues } from "../utils/quotationItems";
 import { isConvertedQuotation, isDraftQuotation } from "../utils/quotationStatus";
+import { getCompanySnapshot, readCompanySettings } from "../utils/companySettings";
 
 function createInvoiceId() {
   if (typeof globalThis.crypto?.randomUUID === "function") {
@@ -75,6 +76,11 @@ export function convertQuotationToInvoice(quotation) {
     throw new Error(validation.message);
   }
 
+  const companySnapshot = getCompanySnapshot();
+  const invoiceDate = new Date().toISOString().split("T")[0];
+  const paymentTerms = Number(readCompanySettings().paymentTerms);
+  const dueDateValue = new Date(`${invoiceDate}T00:00:00`);
+  dueDateValue.setDate(dueDateValue.getDate() + (Number.isInteger(paymentTerms) && paymentTerms >= 0 ? paymentTerms : 30));
   const invoice = {
     id: createInvoiceId(),
     invoiceNumber: generateInvoiceNumber(),
@@ -85,7 +91,10 @@ export function convertQuotationToInvoice(quotation) {
     projectId: quotation.projectId ?? "",
     project: quotation.projectNameSnapshot || quotation.project || "",
     projectNameSnapshot: quotation.projectNameSnapshot || quotation.project || "",
-    date: new Date().toISOString().split("T")[0],
+    date: invoiceDate,
+    dueDate: dueDateValue.toISOString().split("T")[0],
+    companySnapshot,
+    currency: companySnapshot.currency,
 
     materials: validation.materials,
     labour: validation.labour,

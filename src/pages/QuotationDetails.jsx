@@ -7,6 +7,7 @@ import { useToast } from "../context/ToastContext";
 import { resolveQuotationRoute } from "../utils/quotationIdentity";
 import { hasQuotationStatus, isDraftQuotation } from "../utils/quotationStatus";
 import { validateAndNormalizeQuotationValues } from "../utils/quotationItems";
+import { normalizeCompanySettings, readCompanySettings } from "../utils/companySettings";
 
 function QuotationDetails() {
   const { id } = useParams();
@@ -16,8 +17,11 @@ function QuotationDetails() {
 
   const quotation = resolveQuotationRoute(quotations, id);
 
-  const company =
-    JSON.parse(localStorage.getItem("company")) || {};
+  const company = quotation?.companySnapshot
+    ? normalizeCompanySettings(quotation.companySnapshot)
+    : readCompanySettings();
+  const documentCurrency = quotation?.currency || company.currency || getCompanyCurrency();
+  const formatDocumentCurrency = (value) => formatCurrency(value, { currency: documentCurrency });
 
   function canIssueQuotation() {
     if (isDraftQuotation(quotation) || !String(quotation?.clientNameSnapshot || quotation?.client || "").trim() || !String(quotation?.quotationNumber || "").trim()) {
@@ -216,7 +220,7 @@ function QuotationDetails() {
     </p>
 
     <h3 className="text-xl font-bold mt-2">
-      {getCompanyCurrency()}
+      {documentCurrency}
     </h3>
 
   </div>
@@ -272,11 +276,11 @@ function QuotationDetails() {
                 </td>
 
                 <td className="border p-2 text-right">
-                  {formatCurrency(item.price)}
+                  {formatDocumentCurrency(item.price)}
                 </td>
 
                 <td className="border p-2 text-right">
-                  {formatCurrency(Number(item.quantity) * Number(item.price))}
+                  {formatDocumentCurrency(Number(item.quantity) * Number(item.price))}
                 </td>
 
               </tr>
@@ -292,21 +296,21 @@ function QuotationDetails() {
     {Number(quotation.labour) > 0 && <div className="flex justify-between py-2">
       <span>Labour</span>
       <span>
-        {formatCurrency(quotation.labour)}
+        {formatDocumentCurrency(quotation.labour)}
       </span>
     </div>}
 
     {Number(quotation.transport) > 0 && <div className="flex justify-between py-2">
       <span>Transport</span>
       <span>
-        {formatCurrency(quotation.transport)}
+        {formatDocumentCurrency(quotation.transport)}
       </span>
     </div>}
 
     {Number(quotation.discount) > 0 && <div className="flex justify-between py-2">
       <span>Discount</span>
       <span className="text-red-600">
-        -{formatCurrency(quotation.discount)}
+        -{formatDocumentCurrency(quotation.discount)}
       </span>
     </div>}
 
@@ -315,7 +319,7 @@ function QuotationDetails() {
     <div className="flex justify-between text-3xl font-bold text-green-700">
       <span>Grand Total</span>
       <span>
-        {formatCurrency(quotation.total)}
+        {formatDocumentCurrency(quotation.total)}
       </span>
     </div>
 

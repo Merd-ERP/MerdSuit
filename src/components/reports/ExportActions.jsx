@@ -6,6 +6,7 @@ import { useToast } from "../../context/ToastContext";
 import { money } from "./reportData";
 import regularPdfFontUrl from "../../assets/fonts/SegoeUI.ttf?url";
 import boldPdfFontUrl from "../../assets/fonts/SegoeUI-Bold.ttf?url";
+import { readCompanySettings } from "../../utils/companySettings";
 
 const csvCell = (value) => `"${String(value).replaceAll('"', '""')}"`;
 const pdfFontName = "MerdSuiteUnicode";
@@ -80,7 +81,7 @@ function ExportActions({ report, period, metrics }) {
 
   async function exportPdf() {
     try {
-      const company = JSON.parse(localStorage.getItem("company")) || {};
+      const company = readCompanySettings();
       const doc = new jsPDF("p", "mm", "a4");
       await registerPdfFont(doc);
       const width = doc.internal.pageSize.getWidth();

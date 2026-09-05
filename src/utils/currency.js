@@ -1,12 +1,10 @@
+import { DEFAULT_COMPANY_SETTINGS, SUPPORTED_CURRENCIES, readCompanySettings } from "./companySettings";
+
 export const DEFAULT_CURRENCY = "GH₵";
 
 export function getCompanyCurrency() {
-  try {
-    const company = JSON.parse(localStorage.getItem("company"));
-    return company?.currency || DEFAULT_CURRENCY;
-  } catch {
-    return DEFAULT_CURRENCY;
-  }
+  const currency = readCompanySettings().currency;
+  return SUPPORTED_CURRENCIES.includes(currency) ? currency : DEFAULT_COMPANY_SETTINGS.currency;
 }
 
 export function formatCurrency(value, { currency = getCompanyCurrency(), minimumFractionDigits = 0, maximumFractionDigits = 2 } = {}) {

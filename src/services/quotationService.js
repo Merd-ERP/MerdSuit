@@ -1,4 +1,5 @@
 import { relationshipIdsEqual } from "../utils/relationships";
+import { normalizeDocumentPrefix, readCompanySettings } from "../utils/companySettings";
 
 const STORAGE_KEY = "quotations";
 const COUNTER_KEY = "quotationNumberCounter";
@@ -44,7 +45,7 @@ export function deleteQuotation(id) {
 
 export function generateQuotationNumber(quotations = getQuotations()) {
   const highestStoredSequence = quotations.reduce((highest, quotation) => {
-    const match = /^QTN-(?:\d{4}-)?(\d+)$/i.exec(String(quotation.quotationNumber || "").trim());
+    const match = /^[A-Z][A-Z0-9-]{1,9}-(?:\d{4}-)?(\d+)$/i.exec(String(quotation.quotationNumber || "").trim());
     return match ? Math.max(highest, Number(match[1])) : highest;
   }, 0);
   const storedCounter = Number(localStorage.getItem(COUNTER_KEY));
@@ -54,5 +55,6 @@ export function generateQuotationNumber(quotations = getQuotations()) {
   ) + 1;
 
   localStorage.setItem(COUNTER_KEY, String(nextNumber));
-  return `QTN-${new Date().getFullYear()}-${String(nextNumber).padStart(5, "0")}`;
+  const prefix = normalizeDocumentPrefix(readCompanySettings().quotationPrefix, "QTN");
+  return `${prefix}-${new Date().getFullYear()}-${String(nextNumber).padStart(5, "0")}`;
 }

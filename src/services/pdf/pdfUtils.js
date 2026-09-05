@@ -1,8 +1,8 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { getCompanyCurrency } from "../../utils/currency";
 import regularPdfFontUrl from "../../assets/fonts/SegoeUI.ttf?url";
 import boldPdfFontUrl from "../../assets/fonts/SegoeUI-Bold.ttf?url";
+import { normalizeCompanySettings, readCompanySettings } from "../../utils/companySettings";
 
 export const pdfFontName = "MerdSuiteUnicode";
 let pdfFontData;
@@ -40,34 +40,19 @@ export function createPDF() {
  * Load company information from localStorage
  */
 export function getCompany() {
-  const company = JSON.parse(localStorage.getItem("company"));
-
-  return (
-    company || {
-      name: "",
-      tagline: "",
-      phone: "",
-      email: "",
-      website: "",
-      address: "",
-      city: "",
-      country: "",
-      currency: getCompanyCurrency(),
-      taxNumber: "",
-      logo: "",
-    }
-  );
+  return readCompanySettings();
 }
 
 /**
  * Add company header
  */
-export function addCompanyHeader(doc) {
-  const company = getCompany();
+export function addCompanyHeader(doc, companyOverride) {
+  const company = companyOverride ? normalizeCompanySettings(companyOverride) : getCompany();
 
   if (company.logo) {
     try {
-      doc.addImage(company.logo, "PNG", 15, 10, 25, 25);
+      const logoFormat = company.logo.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+      doc.addImage(company.logo, logoFormat, 15, 10, 25, 25);
     } catch (err) {
       console.error("Logo error:", err);
     }

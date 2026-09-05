@@ -8,6 +8,7 @@ import {
   hasRelationshipId,
   relationshipIdsEqual,
 } from "../utils/financialIdentity";
+import { getCompanySnapshot } from "../utils/companySettings";
 
 export function createPaymentReceipt(invoice, payment) {
   if (!hasRelationshipId(invoice?.id) || !hasRelationshipId(payment?.id)) {
@@ -20,7 +21,7 @@ export function createPaymentReceipt(invoice, payment) {
   );
   if (existingReceipt) return existingReceipt;
 
-  const company = JSON.parse(localStorage.getItem("company")) || {};
+  const company = getCompanySnapshot();
   const receipt = {
     id: createFinancialId("receipt"),
     receiptNumber: generateReceiptNumber(),
